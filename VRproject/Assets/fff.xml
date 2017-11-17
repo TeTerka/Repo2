@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1250"?>
+<ListOfConfigurations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Confiurations>
+    <Configuration>
+      <name>1</name>
+      <withNPC>true</withNPC>
+      <withTutorial>true</withTutorial>
+      <Puzzles>
+        <Puzzle>
+          <pathToImage>D:\UnityProjects\VRproject\Assets\Textures\minieiffeltower.png</pathToImage>
+          <widthpx>1</widthpx>
+          <heigthpx>1</heigthpx>
+          <name>1</name>
+        </Puzzle>
+      </Puzzles>
+    </Configuration>
+    <Configuration>
+      <name>2</name>
+      <withNPC>true</withNPC>
+      <withTutorial>true</withTutorial>
+      <Puzzles>
+        <Puzzle>
+          <pathToImage>D:\UnityProjects\VRproject\Assets\Textures\minieiffeltower.png</pathToImage>
+          <widthpx>1</widthpx>
+          <heigthpx>1</heigthpx>
+          <name>2</name>
+        </Puzzle>
+      </Puzzles>
+    </Configuration>
+  </Confiurations>
+</ListOfConfigurations>
