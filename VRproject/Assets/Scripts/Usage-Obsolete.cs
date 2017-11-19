@@ -46,7 +46,7 @@ public class Usage : MonoBehaviour
 
     private void Start()
     {
-        tileSize = ManagerScript.instance.tileSize;
+        tileSize = NewManager.instance.tileSize;
         tableWidth = table.transform.lossyScale.x;
         tableHeigth = table.transform.lossyScale.z;
         Prepare();

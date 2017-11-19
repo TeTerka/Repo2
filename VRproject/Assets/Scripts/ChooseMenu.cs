@@ -81,6 +81,7 @@ public class ChooseMenu : MonoBehaviour {
             {
                 texts[2].text = "without tutorial";
             }
+            texts[3].text = c.timeLimit.ToString();
 
             InnerScrollViewContent = p.GetComponentInChildren<ContentSizeFitter>().gameObject;
             for (int j = 0; j < c.puzzles.Count; j++)//inside fill out info about each puzzle that the configuration contains
@@ -123,8 +124,10 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnTestClicked()
     {
-        if(chosenExperiment!=null)
+        if (chosenExperiment != null)
+        {
             Debug.Log("testing " + chosenExperiment.name);
+        }
         else
         {
             errorText.SetActive(true);
@@ -134,7 +137,12 @@ public class ChooseMenu : MonoBehaviour {
     public void OnRunClicked()
     {
         if (chosenExperiment != null)
+        {
             Debug.Log("running " + chosenExperiment.name);
+            NewManager.instance.StartExperiment(chosenExperiment);
+            MenuLogic.instance.chooseMenuCanvas.SetActive(false);
+            MenuLogic.instance.spectatorCanvas.SetActive(true);
+        }
         else
         {
             errorText.SetActive(true);

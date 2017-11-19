@@ -67,6 +67,7 @@ public class ExpMenu : MonoBehaviour {
         {
             texts[2].text = "without tutorial";
         }
+        texts[3].text = c.timeLimit.ToString();
 
         InnerScrollViewContent = p.GetComponentInChildren<ContentSizeFitter>().gameObject;
         for (int j = 0; j < c.puzzles.Count; j++)//inside fill out info about each puzzle that the configuration contains

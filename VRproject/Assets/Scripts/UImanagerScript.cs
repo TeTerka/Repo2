@@ -27,23 +27,23 @@ public class UImanagerScript : MonoBehaviour {
         currentCam = 0;
     }
 
-    //(na zaklade dat ze vstupu) spusti experiment
-    public void StartButtonClicked()
-    {
-        spectatorCanvas.SetActive(true);
-        setupCanvas.SetActive(false);
-
-        int themeIndex = 0;
-        for (int i = 0; i < themes.Count; i++)
-        {
-            if(themes[i].isOn)
-            {
-                themeIndex = i;
-                break;
-            }
-        }
-        ManagerScript.instance.InitiationAfterSetup(NPCtoggle.isOn,themeIndex,pathText.text);
-    }
+   //////////////////////////(na zaklade dat ze vstupu) spusti experiment
+   ////////////////////////public void StartButtonClicked()
+   ////////////////////////{
+   ////////////////////////    spectatorCanvas.SetActive(true);
+   ////////////////////////    setupCanvas.SetActive(false);
+   ////////////////////////
+   ////////////////////////    int themeIndex = 0;
+   ////////////////////////    for (int i = 0; i < themes.Count; i++)
+   ////////////////////////    {
+   ////////////////////////        if(themes[i].isOn)
+   ////////////////////////        {
+   ////////////////////////            themeIndex = i;
+   ////////////////////////            break;
+   ////////////////////////        }
+   ////////////////////////    }
+   ////////////////////////    ManagerScript.instance.InitiationAfterSetup(NPCtoggle.isOn,themeIndex,pathText.text);
+   ////////////////////////}
 
     //prepina mezi ruznymi kamerami pro koordinatora
     public void ChangeCamButtonClick()
@@ -59,7 +59,7 @@ public class UImanagerScript : MonoBehaviour {
 
     public void NextPhaseButtonClick()
     {
-        ManagerScript.instance.TrySwitchPhase(false);
+        NewManager.instance.TrySwitchPhase(false);
     }
 
     public void NoButtonClick()
@@ -70,7 +70,7 @@ public class UImanagerScript : MonoBehaviour {
     public void YesButtonClick()
     {
         popupPanel.SetActive(false);
-        ManagerScript.instance.TrySwitchPhase(true);
+        NewManager.instance.TrySwitchPhase(true);
     }
 
     public void QuitButtonClick()//pro aktualne "rozehranou" fazi to nevadi, proste nebude dokoncena, neulozi se jeji data...

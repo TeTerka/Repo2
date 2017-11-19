@@ -23,8 +23,8 @@ public class PuzzleTile : GragableObject {
     {
         base.Awake();
 
-        grid = ManagerScript.instance.containersHolder.transform;
-        listOfContainers = ManagerScript.instance.containerList;
+        grid = NewManager.instance.containersHolder.transform;
+        listOfContainers = NewManager.instance.containerList;
 
         animator = GetComponent<Animator>();//prefab ho musi mit!
     }
@@ -55,7 +55,8 @@ public class PuzzleTile : GragableObject {
             collidingContainer.GetComponent<TileContainer>().CancelHighlight();
             collidingContainer = null;
 
-            ManagerScript.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
+            //ManagerScript.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
+            NewManager.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
         }
     }
     public override void OnTriggerPressed(ControllerScript controller)
@@ -63,7 +64,8 @@ public class PuzzleTile : GragableObject {
         base.OnTriggerPressed(controller);
         if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne
         {
-            ManagerScript.instance.OnCubeRemoved(placedAt.Matches);
+            //ManagerScript.instance.OnCubeRemoved(placedAt.Matches);
+            NewManager.instance.OnCubeRemoved(placedAt.Matches);
             ClearInfoAboutPlacing();
         }
         Unfreez();//pokud beru dilek z mrizky...a nebo projistotu vzdy
@@ -73,7 +75,7 @@ public class PuzzleTile : GragableObject {
     {
         tileIndex = index;
         spawnedAt = spawnPoint;
-        listOfContainers = ManagerScript.instance.containerList;
+        listOfContainers = NewManager.instance.containerList;
     }
 
     public void RespawnYourself()//respawnuje sam sebe na misto, kde byl a zacatku vytvoren
@@ -141,7 +143,7 @@ public class PuzzleTile : GragableObject {
         if (!IsFree())//je to kvuli umistovani dilku a ty se daji umistit jedine rukou, takze me to zajima jedine kdyz je krychle drzena
         {
             //spocita ke ktremu policku to ma nejbliz (a ne dal nez na 2x hranu kostky)
-            float minDist = ManagerScript.instance.tileSize*2;
+            float minDist = NewManager.instance.tileSize*2;
             GameObject closest = null;
             foreach (TileContainer container in listOfContainers)
             {
@@ -178,7 +180,7 @@ public class PuzzleTile : GragableObject {
     }
     private void SnapPosition()//posune krychli aby pasovala do mrizky
     {
-        float offset = ManagerScript.instance.tileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
+        float offset = NewManager.instance.tileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
         Vector3 newPos = new Vector3(collidingContainer.transform.position.x, collidingContainer.transform.position.y + offset, collidingContainer.transform.position.z);
         transform.position = newPos;
     }

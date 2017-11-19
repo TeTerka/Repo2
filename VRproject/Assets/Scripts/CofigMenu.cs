@@ -32,6 +32,9 @@ public class CofigMenu : MonoBehaviour {
     public GameObject scrollViewContent;
     public GameObject blockingPanel;
     public GameObject errorText;
+    //new stuff
+    public InputField timeLimitField;
+    //
 
     public ExpMenu em;
 
@@ -43,7 +46,7 @@ public class CofigMenu : MonoBehaviour {
     private void Start()
     {
         //zjisti kolik se na stul vejde max kostek na vysku/sirku
-        tileSize = ManagerScript.instance.tileSize;
+        tileSize = NewManager.instance.tileSize;
         tableWidth = table.transform.lossyScale.x;
         tableHeigth = table.transform.lossyScale.z;
 
@@ -158,6 +161,18 @@ public class CofigMenu : MonoBehaviour {
         {
             configNameField.image.color = Color.white;
         }
+        //new stuff
+        int time=42;
+        if (timeLimitField.text == null || !int.TryParse(timeLimitField.text,out time))
+        {
+            ok = false;
+            timeLimitField.image.color = Color.red;
+        }
+        else
+        {
+            timeLimitField.image.color = Color.white;
+        }
+        //
         for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
         {
             GameObject q = puzzlePanels[i];
@@ -195,6 +210,7 @@ public class CofigMenu : MonoBehaviour {
         c.name = configNameField.text;
         c.withNPC = npcToggle.isOn;
         c.withTutorial = tutorialToggle.isOn;
+        c.timeLimit = time;
         for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
         {
             Puzzle p = new Puzzle();

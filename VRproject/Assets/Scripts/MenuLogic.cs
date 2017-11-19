@@ -11,6 +11,7 @@ public class MenuLogic: MonoBehaviour {//nosic dat a procedur sdilenych mezi vse
    public GameObject confMenuCanvas;
    public GameObject mainMenuCanvas;
    public GameObject chooseMenuCanvas;
+    public GameObject spectatorCanvas;
 
    public ListOfConfigurations availableConfigs = new ListOfConfigurations();
    public ListOfExperiments availableExperiments = new ListOfExperiments();
@@ -41,7 +42,7 @@ public class MenuLogic: MonoBehaviour {//nosic dat a procedur sdilenych mezi vse
         return NewSprite;
     }
 
-    private Texture2D LoadTexture(string FilePath)
+    public Texture2D LoadTexture(string FilePath)
     {
 
         // Load a PNG or JPG file from disk to a Texture2D
@@ -89,6 +90,9 @@ public class Configuration
     public string name;
     public bool withNPC;
     public bool withTutorial;
+    //nova cast
+    public int timeLimit;//time limit for each puzzle, in seconds
+    //
     [XmlArray("Puzzles")]
     [XmlArrayItem("Puzzle")]
     public List<Puzzle> puzzles = new List<Puzzle>();

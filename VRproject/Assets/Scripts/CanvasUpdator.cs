@@ -15,7 +15,7 @@ public class CanvasUpdator : MonoBehaviour {
     }
     private void OnGUI()
     {
-        var arr = ManagerScript.instance.containerList;
+        var arr = NewManager.instance.containerList;
         for (int i = 0; i <arr.Count ; i++)
         {
             if(arr[i].GetComponent<TileContainer>().Matches==true)

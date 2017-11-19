@@ -36,14 +36,14 @@ public class TileContainer : MonoBehaviour {
 
     private void Start()
     {
-        grid = ManagerScript.instance.containersHolder.transform;
+        grid = NewManager.instance.containersHolder.transform;
         myRndr = GetComponent<Renderer>();//prafab ho musi mit!
         Matches = false;
     }
 
     public void SetMatches(Transform tile, int tileIndex)//container zjisti, jestli na nej pasuje takto natoceni dilek (info o dilku predavano v parametrech)
     {
-        int n = ManagerScript.instance.modelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
+        int n = NewManager.instance.modelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
         Matches = (CheckIndex(tileIndex) && CheckFace(tile, n) && CheckFaceRotation(tile, n));//zjisti jestli tedy dilek pasuje
     }
 
