@@ -15,6 +15,11 @@ public enum FileBrowserType
 
 public class FileBrowser
 {
+    //my stuff................................
+    private string[] drives = System.IO.Directory.GetLogicalDrives();
+    //nasledujici (lepsi) varianta nefungje kvuli monu,s tim nic nenadelam...
+    //private DriveInfo[] allDrives = DriveInfo.GetDrives();
+    //.........................................
 
     // Called when the user clicks cancel or select
     public delegate void FinishedCallback(string path);
@@ -45,10 +50,14 @@ public class FileBrowser
         set
         {
             m_filePattern = value;
+            //my stuff
+            m_splitPattern = m_filePattern.Split('|');
             ReadDirectoryContents();
         }
     }
     protected string m_filePattern;
+    //my stuff
+    protected string[] m_splitPattern;
 
     // Optional image for directories
     public Texture2D DirectoryImage
@@ -178,12 +187,18 @@ public class FileBrowser
             {
                 string directoryName = Path.GetDirectoryName(m_currentDirectory);
                 string[] generation = new string[0];
+                //my stuff
+                List<string> miniGens = new List<string>();
                 if (directoryName != null)
                 {   //This is new: generation should be an empty array for the root directory.
                     //directoryName will be null if it's a root directory
-                    generation = Directory.GetDirectories(
-                    directoryName,
-                    SelectionPattern);
+                    foreach (string s in m_splitPattern)
+                    {
+                        miniGens.AddRange(Directory.GetDirectories(
+                        directoryName,
+                        s));
+                    }
+                    generation = miniGens.ToArray();
                 }
                 m_currentDirectoryMatches = Array.IndexOf(generation, m_currentDirectory) >= 0;
             }
@@ -200,7 +215,14 @@ public class FileBrowser
         }
         else
         {
-            m_directories = Directory.GetDirectories(m_currentDirectory, SelectionPattern);
+            //my stuff
+            List<string> miniGens = new List<string>();
+            foreach (string s in m_splitPattern)
+            {
+                miniGens.AddRange(Directory.GetDirectories(m_currentDirectory, s));
+            }
+            m_directories = miniGens.ToArray();
+
             var nonMatchingDirectories = new List<string>();
             foreach (string directoryPath in Directory.GetDirectories(m_currentDirectory))
             {
@@ -230,7 +252,13 @@ public class FileBrowser
         }
         else
         {
-            m_files = Directory.GetFiles(m_currentDirectory, SelectionPattern);
+            //my stuff
+            List<string> miniGens = new List<string>();
+            foreach (string s in m_splitPattern)
+            {
+                miniGens.AddRange(Directory.GetFiles(m_currentDirectory, s));
+            }
+            m_files = miniGens.ToArray();
             var nonMatchingFiles = new List<string>();
             foreach (string filePath in Directory.GetFiles(m_currentDirectory))
             {
@@ -350,7 +378,25 @@ public class FileBrowser
         GUI.enabled = true;
         GUILayout.EndScrollView();
         GUILayout.BeginHorizontal();
+
+        GUILayout.Label("choose drive:");
+        //my part.......................................................
+        foreach (string str in drives)
+        {
+            if (Directory.Exists(str))//ale co kdyz neni ready atd.....???
+            {
+                if (GUILayout.Button(str, GUILayout.Width(30)))
+                {
+                    //do stuff...
+                    SetNewDirectory(str);
+                }
+            }
+
+        }
+        //end of..................................................my part
+
         GUILayout.FlexibleSpace();
+
         if (GUILayout.Button("Cancel", GUILayout.Width(50)))
         {
             m_callback(null);

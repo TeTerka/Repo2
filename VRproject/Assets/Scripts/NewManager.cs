@@ -8,10 +8,10 @@ public class NewManager : MonoBehaviour {
     //sigleton stuff
     public static NewManager instance;
 
-    //headset mode / debug mode (VR stuff)
-    [Header("headset mode / debug mode")]
-    public GameObject VRavailable;
-    public GameObject VRunavailable;
+    ////headset mode / debug mode (VR stuff)
+    //[Header("headset mode / debug mode")]
+    //public GameObject VRavailable;
+    //public GameObject VRunavailable;
 
     //kontainery 
     [Header("containers")]
@@ -134,15 +134,15 @@ public class NewManager : MonoBehaviour {
         instance = this;
 
         //development vr unavailble stuff
-        if (SteamVR.instance != null)
-        {
-            ActivateRig(VRavailable);
+        //if (SteamVR.instance != null)
+        //{
+           // ActivateRig(VRavailable);
             ScaleRoomToFitPlayArea();
-        }
-        else
-        {
-            ActivateRig(VRunavailable);
-        }
+       //}
+       //else
+       //{
+       //    ActivateRig(VRunavailable);
+       //}
 
         //obsah sceny pred dokoncenim setupu
         modelPictureFrame.material.mainTexture = null;
@@ -150,11 +150,11 @@ public class NewManager : MonoBehaviour {
         simpleMan.gameObject.SetActive(false);
     }
 
-    private void ActivateRig(GameObject rig)
-    {
-        VRavailable.SetActive(rig == VRavailable);
-        VRunavailable.SetActive(rig == VRunavailable);
-    }
+    //private void ActivateRig(GameObject rig)
+    //{
+    //    VRavailable.SetActive(rig == VRavailable);
+    //    VRunavailable.SetActive(rig == VRunavailable);
+    //}
 
     private void ScaleRoomToFitPlayArea()
     {
@@ -167,9 +167,13 @@ public class NewManager : MonoBehaviour {
             System.Threading.Thread.Sleep(1000);//je ok takhle to cely uspat???
         }
 
-        float floorScaleFactorX = editorFloorScale.localScale.x / 2;//sirka podlahy v editoru/2 (nyni 1.75)
-        float floorScaleFactorZ = editorFloorScale.localScale.z / 4;//delka podlahy v editoru kam dosahuje camera rig/2 (nyni 1.50)
-        Vector3 newScale = new Vector3(floorScaleFactorX / Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0), 1, floorScaleFactorZ / Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2));
+        float floorScaleFactorX = editorFloorScale.localScale.x;//sirka podlahy v editoru
+        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//delka podlahy v editoru kam dosahuje camera rig
+        //Vector3 newScale = new Vector3(floorScaleFactorX / Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0), 1, floorScaleFactorZ / Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2));
+        Vector3 newScale = new Vector3(Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0)/ floorScaleFactorX, 1,Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2)/ floorScaleFactorZ);
+        float safetyBorder = 0.02f;
+        newScale.x += safetyBorder;
+        newScale.z += safetyBorder;
         //scale room
         level.localScale = newScale;
         //move npc and camera rig
@@ -181,6 +185,9 @@ public class NewManager : MonoBehaviour {
         containersHolder.transform.localScale = new Vector3(1 / containersHolder.transform.lossyScale.x, 1, 1 / containersHolder.transform.lossyScale.z);
         //adjust tile size (to be cubes)
         tileHolder.transform.localScale = new Vector3(1 / tileHolder.transform.lossyScale.x, 1, 1 / tileHolder.transform.lossyScale.z);
+
+
+        originalScale = imageHolder.localScale;
     }
 
     //********************************************************PHASES**********************************************************************************
@@ -216,6 +223,8 @@ public class NewManager : MonoBehaviour {
             Destroy(phaseLabels[i]);
             phaseLabels.RemoveAt(i);
         }
+
+        imageHolder.localScale = originalScale;
     }
     private void StartConfig(Configuration c)
     {
@@ -577,8 +586,10 @@ public class NewManager : MonoBehaviour {
                 k++;
             }
         }
+        //generuj spawnpoints
+        GenerateSpawnPoints(h,w);
         //generuj dilky (krychle)
-        ShuffleList(spawnPoints);
+        ShuffleList(spawnPositions);
         k = 0;
         for (int i = 0; i < h; i++)
         {
@@ -586,12 +597,13 @@ public class NewManager : MonoBehaviour {
             {
                 //get random rotation
                 Vector3[] axies = new Vector3[] { Vector3.forward, Vector3.down, Vector3.right, Vector3.back, Vector3.up, Vector3.left };
-                int randomIndex1 = Random.Range(0, 6);
-                int randomIndex2 = Random.Range(0, 6);
-                Quaternion randomRotation = Quaternion.LookRotation(axies[randomIndex1], axies[randomIndex2]);
+                //int randomIndex1 = Random.Range(0, 6);
+                //int randomIndex2 = Random.Range(0, 6);
+                //Quaternion randomRotation = Quaternion.LookRotation(axies[randomIndex1], axies[randomIndex2]);
 
                 //create the cube
-                GameObject t = Instantiate(tilePrafab, spawnPoints[k].position, randomRotation);
+                //GameObject t = Instantiate(tilePrafab, spawnPoints[k].position,randomRotation);
+                GameObject t = Instantiate(tilePrafab, spawnPositions[k], Quaternion.LookRotation(axies[3],axies[1]));
                 t.transform.SetParent(tileHolder.transform);
                 t.transform.localScale = new Vector3(tileSize * 100, tileSize * 100, tileSize * 100);// *100 protoze moje krychle z blenderu je omylem 100x mensi nez krychle v unity...
 
@@ -601,10 +613,47 @@ public class NewManager : MonoBehaviour {
                 mr.material.mainTexture = textureSource[k];
 
                 //index
-                t.GetComponent<PuzzleTile>().Initialize(k, spawnPoints[k]);//prefab musi mit PuzzleTile, jinak to tady spadne...//tady bylo <Tile> v old grab system
+                t.GetComponent<PuzzleTile>().Initialize(k, spawnPositions[k]);//prefab musi mit PuzzleTile, jinak to tady spadne...//tady bylo <Tile> v old grab system
 
                 tileList.Add(t);
                 k++;
+            }
+        }
+
+    }
+
+    [Header("for generating spawnpoints")]
+    public Transform leftPoint;
+    public Transform rightPoint;
+    private List<Vector3> spawnPositions = new List<Vector3>();
+    private void GenerateSpawnPoints(int h, int w)
+    {
+        spawnPositions.Clear();
+        foreach (Transform point in spawnPoints)
+        {
+            spawnPositions.Add(point.position);
+        }
+
+        float offset = tileSize/2;
+        float jOffset = tileSize;
+
+        for (int i = 0; i < Mathf.Ceil((float)w / 2); i++)//polovina kostek do leva
+        {
+            for (int j = 0; j < h; j++)
+            {
+                float rand = Random.Range(0.01f, offset);
+                float jRand = Random.Range(0.05f, jOffset);
+                spawnPositions.Add(new Vector3(leftPoint.position.x - (tileSize + rand) * i - (offset + (tileSize / 2)), leftPoint.position.y, leftPoint.position.z - (tileSize + jRand) * j));
+            }
+        }
+
+        for (int i = 0; i <w/2 ; i++)//druha polovina kostek do prava
+        {
+            float rand = Random.Range(0.01f, offset);
+            float jRand = Random.Range(0.05f, jOffset);
+            for (int j = 0; j < h; j++)
+            {
+                spawnPositions.Add(new Vector3(offset + (tileSize / 2) + rightPoint.position.x + (tileSize + rand) * i, rightPoint.position.y, rightPoint.position.z - (tileSize + jRand) * j));
             }
         }
 

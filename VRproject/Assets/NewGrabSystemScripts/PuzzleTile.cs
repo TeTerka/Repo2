@@ -15,7 +15,7 @@ public class PuzzleTile : GragableObject {
     //characteristiky
     private int tileIndex;
     private Animator animator;
-    private Transform spawnedAt;//misto kde byl spawnovan - aby se tam pripane zas mohl respawnovat
+    private Vector3 spawnedAt;//misto kde byl spawnovan - aby se tam pripane zas mohl respawnovat
     //zjistovani kolidujicich policek mrizky (= colliding containers)
     List<TileContainer> listOfContainers;
 
@@ -71,7 +71,7 @@ public class PuzzleTile : GragableObject {
         Unfreez();//pokud beru dilek z mrizky...a nebo projistotu vzdy
     }
 
-    public void Initialize(int index,Transform spawnPoint)//tahle funkce se vola pri vytvareni dilku (aby se nepsalo primo tileIndex = k;)
+    public void Initialize(int index,Vector3 spawnPoint)//tahle funkce se vola pri vytvareni dilku (aby se nepsalo primo tileIndex = k;)
     {
         tileIndex = index;
         spawnedAt = spawnPoint;
@@ -132,7 +132,7 @@ public class PuzzleTile : GragableObject {
         }
         else
         {
-            transform.position = spawnedAt.position;
+            transform.position = spawnedAt;
         }
 
     }

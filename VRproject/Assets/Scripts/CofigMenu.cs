@@ -121,7 +121,7 @@ public class CofigMenu : MonoBehaviour {
             FileSelectedCallback
         );
 
-        m_fileBrowser.SelectionPattern = "*.png";//jak dovolit dva patterny? napr .png nebo .jpg???????//asi budu muset hrabnout do FileBrowseru
+        m_fileBrowser.SelectionPattern = "*.png|*.jpg";//pomoci | jsou oddeleny jednotlive patterny (muj zasah do fileBrowseru)
         m_fileBrowser.DirectoryImage = m_directoryImage;
         m_fileBrowser.FileImage = m_fileImage;
     }
