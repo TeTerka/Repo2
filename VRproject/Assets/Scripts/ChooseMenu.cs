@@ -24,6 +24,7 @@ public class ChooseMenu : MonoBehaviour {
     public GameObject puzzleInfoPanelPrefab;
 
     private List<Button> expButtons = new List<Button>();
+    private bool loadSuccessful;
 
     private void Start()
     {
@@ -49,6 +50,7 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnAvailableExpClick(Button b, Experiment e)//choose this experiment and show info about it (left click)
     {
+        loadSuccessful = true;
         //choose it
         chosenExperiment = e;
         errorText.SetActive(false);
@@ -91,6 +93,15 @@ public class ChooseMenu : MonoBehaviour {
                 List<Image> images = new List<Image>();
                 q.GetComponentsInChildren<Image>(images);
                 images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
+                //**************************************************************************************
+                //pozn.: predpokladam ze obsah xml nebude nikdo menit, jedine co se tedy muze pokazit je, ze ulozena cesta prestane vest k obrazku
+                //je tedy potreba to zkontrolovat:
+                if(images[1].sprite==null)//neboli if picture loadig failed
+                {
+                    loadSuccessful = false;
+                    images[1].sprite = MenuLogic.instance.missingImage;
+                }
+                //**************************************************************************************
             }
         }
     }
@@ -124,7 +135,7 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnTestClicked()
     {
-        if (chosenExperiment != null)
+        if (chosenExperiment != null && loadSuccessful)
         {
             Debug.Log("testing " + chosenExperiment.name);
         }
@@ -136,9 +147,8 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnRunClicked()
     {
-        if (chosenExperiment != null)
+        if (chosenExperiment != null && loadSuccessful)
         {
-            Debug.Log("running " + chosenExperiment.name);
             NewManager.instance.StartExperiment(chosenExperiment);
             MenuLogic.instance.chooseMenuCanvas.SetActive(false);
             MenuLogic.instance.spectatorCanvas.SetActive(true);

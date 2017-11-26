@@ -34,6 +34,8 @@ public class CofigMenu : MonoBehaviour {
     public GameObject errorText;
     //new stuff
     public InputField timeLimitField;
+    public Dropdown modelDropdown;
+    public Dropdown behaviourDropdown;
     //
 
     public ExpMenu em;
@@ -70,6 +72,22 @@ public class CofigMenu : MonoBehaviour {
         droplist[0].AddOptions(widths);
         droplist[1].ClearOptions();
         droplist[1].AddOptions(heigths);
+
+        //nastav dropdowny na modely npc a chovani npc
+        List<string> models = new List<string>();
+        foreach (NpcModel model in NewManager.instance.npcModels)
+        {
+            models.Add(model.modelName);
+        }
+        modelDropdown.ClearOptions();
+        modelDropdown.AddOptions(models);
+        List<string> behaviours = new List<string>();
+        foreach (NpcBeahviour behaviour in NewManager.instance.npcBehaviours)
+        {
+            behaviours.Add(behaviour.bahaviourName);
+        }
+        behaviourDropdown.ClearOptions();
+        behaviourDropdown.AddOptions(behaviours);
 
         //vygeneruj panely reprezentujici jednotlive puzzly do scroll view
         OnNumberDropdownChanged();
@@ -117,7 +135,7 @@ public class CofigMenu : MonoBehaviour {
         activeButton = i;
         m_fileBrowser = new FileBrowser(
             new Rect(100, 100, Screen.width-200, Screen.height - 200),
-            "Choose PNG File",
+            "Choose PNG or JPG File",
             FileSelectedCallback
         );
 
@@ -131,9 +149,14 @@ public class CofigMenu : MonoBehaviour {
     {
         m_fileBrowser = null;
         texturePaths[activeButton] = path;
-        if (path != null)//mozna nejaka sofistikovanejsi kontrola...jestli to je fakt obrazek, jestli neni read only....atd!
+        if (path != null)
         {
             puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(path);
+            //jenom to naznaci ze je tu problem (zobrazi missingImage), ale konfiguraci to dovoli vyrobit => musi se pozdeji znovu provest kontrola...
+            if (puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite == null)//neboli if picture loadig failed
+            {
+                puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.missingImage;
+            }
         }
         else
         {
@@ -224,9 +247,12 @@ public class CofigMenu : MonoBehaviour {
             p.pathToImage = texturePaths[i];
             c.puzzles.Add(p);
         }
+
+        c.modelName = modelDropdown.captionText.text;
+        c.behaviourName = behaviourDropdown.captionText.text;
+
         //add it to the list
         MenuLogic.instance.availableConfigs.configs.Add(c);
-        Debug.Log("created config " + c.name);
         ////////////////////////tohle asi nebude pri kazdem save ne?.....co treba OnAppQuit nebo tak neco...
         ////////////////////////serialize it (all?)
         //////////////////////var ser = new XmlSerializer(typeof(ListOfConfigurations));

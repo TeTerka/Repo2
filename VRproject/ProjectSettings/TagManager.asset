@@ -9,6 +9,7 @@ TagManager:
   - FxTemporaire
   - projectile
   - GrabableObject
+  - subtitlesCanvas
   layers:
   - Default
   - TransparentFX

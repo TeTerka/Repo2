@@ -77,6 +77,10 @@ public class ExpMenu : MonoBehaviour {
             List<Image> images = new List<Image>();
             q.GetComponentsInChildren<Image>(images);
             images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
+            if (images[1].sprite == null)//neboli if picture loadig failed
+            {
+                images[1].sprite = MenuLogic.instance.missingImage;
+            }
         }
 
         //make the button clickable (so that it can be selected for an experiment...and deletable by right clicking)
@@ -85,7 +89,6 @@ public class ExpMenu : MonoBehaviour {
         //////////p.onClick.AddListener(delegate { OnAvailableConfigClick(p, c); });
 
         //availableConfigInfoButtons.Add(p);
-        Debug.Log("added");
     }
 
     public void OnAvailableConfigClick(Button availableButton,Configuration c)//selects this button/config for experiment (and put it to chosenConfigsList)
@@ -185,7 +188,6 @@ public class ExpMenu : MonoBehaviour {
         }
         //add it to the list
         MenuLogic.instance.availableExperiments.experiments.Add(e);
-        Debug.Log("created experiment" + e.name);
         /////////////////////////////////////////tohle asi nebude pri kazdem save ne?.....co treba OnAppQuit nebo tak neco...
         /////////////////////////////////////////serialize it (all?)
         ///////////////////////////////////////var ser = new XmlSerializer(typeof(ListOfExperiments));

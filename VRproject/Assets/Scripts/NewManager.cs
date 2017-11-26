@@ -24,7 +24,7 @@ public class NewManager : MonoBehaviour {
     //pucliky (sebratelne dilky)
     [Header("tiles")]
     public GameObject tilePrafab;
-    public List<Transform> spawnPoints = new List<Transform>();//musi jich byt 3*5!!!!!!!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    public List<Transform> spawnPoints = new List<Transform>();//seznam napevno urcenych spawnpointu (ty pod stolem)
     public GameObject tileHolder;
     [Header("this shoul be hidden somehow...")]
     public float tileSize = 0.15f;
@@ -43,8 +43,8 @@ public class NewManager : MonoBehaviour {
     public SteamVR_PlayArea VRplayArea;
     public Transform level;
     public Transform cameraRigPoint;
-    public Transform simpleMan;
-    public Transform simpleManPoint;
+    public GameObject theNpc;
+    public Transform npcPoint;
     public Transform imageHolder;
     public Transform editorFloorScale;
 
@@ -58,6 +58,7 @@ public class NewManager : MonoBehaviour {
     private List<Texture2D> tutTexturesForCubes = new List<Texture2D>();
 
     //info o aktualni fazi
+    private Experiment activeExperiment = null;
     private Configuration activeConfig;
     private int activePuzzleIndex;
     bool inStart;
@@ -79,7 +80,7 @@ public class NewManager : MonoBehaviour {
 
     //other UI
     public Text idInuput;
-    private List<string> ids = new List<string>();
+    ///////////////////////////private List<string> ids = new List<string>();
     public Text messageOutput;
     public InputField playeridInputField;
     public GameObject popupPanel;
@@ -147,7 +148,7 @@ public class NewManager : MonoBehaviour {
         //obsah sceny pred dokoncenim setupu
         modelPictureFrame.material.mainTexture = null;
         modelPictureFrame.material.color = Color.white;
-        simpleMan.gameObject.SetActive(false);
+        ////////////////////////////////////////theNpc.gameObject.SetActive(false);
     }
 
     //private void ActivateRig(GameObject rig)
@@ -177,7 +178,7 @@ public class NewManager : MonoBehaviour {
         //scale room
         level.localScale = newScale;
         //move npc and camera rig
-        simpleMan.position = simpleManPoint.position;
+        /////////////////////////////////////////////////////////////////theNpc.position = npcPoint.position;
         this.transform.position = cameraRigPoint.position;
         ////adjust model picture height (to preserve the correct ratio)
         ////imageHolder.localScale = new Vector3(imageHolder.localScale.x, imageHolder.localScale.y * floorScaleFactorX / Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0), imageHolder.localScale.z);
@@ -194,6 +195,7 @@ public class NewManager : MonoBehaviour {
 
     public void StartExperiment(Experiment e)
     {
+        activeExperiment = e;
         //do stuff...
         expNameText.text = e.name;
         //fill out the configs scrollview...
@@ -203,19 +205,57 @@ public class NewManager : MonoBehaviour {
             var p = Instantiate(configNameButtonPrafab, configScrollContent.transform);
             p.GetComponentInChildren<Text>().text = e.configs[i].name;
             configButtons.Add(p);
-            p.onClick.AddListener(delegate { if (inStart) { FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            p.onClick.AddListener(delegate { if (inStart) { FinishStartPhase(); FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         }
+
         StartConfig(e.configs[0]);
     }
-    private void FinishCurrentConfig()//only if in start!!!!!
+    private void FinishExperiment()//can be called only after current configuration was correctly finished
     {
+        //clear the configButtons...
+        for (int i = configButtons.Count - 1; i >= 0; i--)
+        {
+            Destroy(configButtons[i]);
+            configButtons.RemoveAt(i);
+        }
+        //...
+        activeExperiment = null;
+    }
+
+    public void OnQuitClicked()
+    {
+        if (inStart)
+        {
+            FinishStartPhase();
+        }
+        else
+        {
+            if (inTut)
+            {
+                FinishTutorial();
+            }
+            else
+            {
+                PhaseFinish();
+            }
+        }
+
+        FinishCurrentConfig();
+        FinishExperiment();
+        MenuLogic.instance.spectatorCanvas.SetActive(false);
+        MenuLogic.instance.chooseMenuCanvas.SetActive(true);
+    }
+    private void FinishCurrentConfig()
+    {
+        //can be called only after current phase was correctly finished!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //tady by se to melo zeptat, jestli opravdu chci prepnout na jinou konfiguraci.....
 
         //finish current phase properly....destroy cubes.....any special cases???????????????????????????????????
-        FinishStartPhase();
         activePuzzleIndex = -1;
         texturesForCubes.Clear();
         modelPictures.Clear();
+        tutTexturesForCubes.Clear();
+        DestroyCharacter();
 
         //clear the phase scrollview...
         for (int i = phaseLabels.Count - 1; i >= 0; i--)
@@ -225,6 +265,8 @@ public class NewManager : MonoBehaviour {
         }
 
         imageHolder.localScale = originalScale;
+
+        DestroyCharacter();
     }
     private void StartConfig(Configuration c)
     {
@@ -244,7 +286,36 @@ public class NewManager : MonoBehaviour {
             q.GetComponentInChildren<Text>().text = c.puzzles[i].name;
             phaseLabels.Add(q);
         }
-        simpleMan.gameObject.SetActive(c.withNPC);
+
+        //prepare npc
+        //////////////////////////////////////////theNpc.gameObject.SetActive(c.withNPC);
+        //////////////////////////////////////////theNpc.position = npcPoint.position;
+        if(c.withNPC)
+        {
+            NpcModel nm = null;
+            foreach (NpcModel model in npcModels)
+            {
+                if(model.modelName==c.modelName)
+                {
+                    nm = model;
+                    break;
+                }
+            }
+            NpcBeahviour nb = null;
+            foreach (NpcBeahviour b in npcBehaviours)
+            {
+                if (b.bahaviourName == c.behaviourName)
+                {
+                    nb = b;
+                    break;
+                }
+            }
+            if(nb!=null && nm!=null)
+            {
+                CreateCharacter(nm, nb);
+            }
+        }
+
         activeConfig = c;
         //create textures for tutorial
         if (c.withTutorial)
@@ -252,11 +323,20 @@ public class NewManager : MonoBehaviour {
             tutTexturesForCubes=CreateTexturesForCubes(2, 2, tutInputPicture);
         }
         //create textures for puzzles
+        //and create txtures for model pictures
         for (int i = 0; i < c.puzzles.Count; i++)
         {
-            texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage)));
-            //create txtures for model pictures
-            Texture2D tt = MenuLogic.instance.LoadTexture(activeConfig.puzzles[i].pathToImage);
+            Texture2D tt;
+            if (MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage) == null)//v pripade chyby nahrad obrazek vykricnikem....ale nic neukoncuj, je to jen varovani
+            {
+                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.missingImage.texture));
+                tt = MenuLogic.instance.missingImage.texture;
+            }
+            else//jinak normalne nahraj obrazky ze souboru
+            {
+                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage)));
+                tt = MenuLogic.instance.LoadTexture(activeConfig.puzzles[i].pathToImage);
+            }
             int sideWidth = Mathf.Min(tt.height / activeConfig.puzzles[i].heigthpx, tt.width / activeConfig.puzzles[i].widthpx);
             Texture2D t = new Texture2D(sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx);
             Color[] block = tt.GetPixels(0, 0, sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx);
@@ -286,9 +366,7 @@ public class NewManager : MonoBehaviour {
         float x = activeConfig.puzzles[activePuzzleIndex].widthpx * tileSize * 3f;
         float y = activeConfig.puzzles[activePuzzleIndex].heigthpx * tileSize * 3f;
         imageHolder.transform.localScale = new Vector3(imageHolder.transform.localScale.x * x, imageHolder.transform.localScale.y * y, 0.2f);
-        Debug.Log(x);
-        Debug.Log(y);
-        Debug.Log(imageHolder.transform.localScale);
+
         modelPictureFrame.material.mainTexture = modelPictures[activePuzzleIndex];
         GeneratePuzzleTiles(activeConfig.puzzles[activePuzzleIndex].heigthpx, activeConfig.puzzles[activePuzzleIndex].widthpx, texturesForCubes[activePuzzleIndex]);
 
@@ -297,6 +375,8 @@ public class NewManager : MonoBehaviour {
         countingDown = true;
 
         //dale by melo spustit spravnou animaci
+        if(theNpc!=null)
+            theNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
         //a zecit resit nejake logovani a ukladani vysledku a tak...
     }
     private void PhaseFinish()
@@ -369,6 +449,11 @@ public class NewManager : MonoBehaviour {
         nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
 
         //animace NPC
+        if (theNpc != null)
+        {
+            theNpc.GetComponent<Animator>().SetTrigger("TabletUp");
+            theNpc.GetComponent<Animator>().SetTrigger("StartStart");
+        }
         //text (rec NPC nebo napis na tabuli)
         //...
     }
@@ -401,6 +486,11 @@ public class NewManager : MonoBehaviour {
         GeneratePuzzleTiles(2, 2, tutTexturesForCubes);
 
         //animace NPC
+        if (theNpc != null)
+        {
+            theNpc.GetComponent<Animator>().SetTrigger("TabletDown");
+            theNpc.GetComponent<Animator>().SetTrigger("StartWelcomeSpeech");
+        }
         //text (rec NPC nebo napis na tabuli)
         //...
     }
@@ -441,7 +531,7 @@ public class NewManager : MonoBehaviour {
         //specialne pro welcome phase - kontrola jestli bylo zadano unikatni playerID
         if (inStart)
         {
-            if ((!ContainsWhitespaceOnly(idInuput.text)) && (!ids.Contains(idInuput.text)))//je neprazdny a je unikatni
+            if ((!ContainsWhitespaceOnly(idInuput.text)) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
             {
                 messageOutput.text = "";
                 playeridInputField.interactable = false;
@@ -460,7 +550,6 @@ public class NewManager : MonoBehaviour {
         else
         {
             //popup window
-            Debug.Log("popopo");
             popupPanel.SetActive(true);
         }
     }
@@ -475,7 +564,7 @@ public class NewManager : MonoBehaviour {
 
         if (inStart)//if just finished start phase
         {
-            ids.Add(idInuput.text);
+            activeExperiment.ids.Add(idInuput.text);
             FinishStartPhase();
             yield return new WaitForSeconds(1);
             if (activeConfig.withTutorial)
@@ -495,6 +584,10 @@ public class NewManager : MonoBehaviour {
                 FinishTutorial();
                 yield return new WaitForSeconds(1);
                 activePuzzleIndex = -1;//od ted zacinaji main puzzly
+                if (activeConfig.puzzles.Count==1)
+                {
+                    nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
+                }
                 PhaseStart();
             }
             else
@@ -504,13 +597,17 @@ public class NewManager : MonoBehaviour {
                     playeridInputField.interactable = true;
                     PhaseFinish();
                     yield return new WaitForSeconds(1);
-                    nextButton.GetComponentInChildren<Text>().text = "NEXT PLAYER";
+
                     StartStart();
                 }
                 else//if just finished any other puzzle
                 {
                     PhaseFinish();
                     yield return new WaitForSeconds(1);
+                    if (activePuzzleIndex == activeConfig.puzzles.Count - 2)
+                    {
+                        nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
+                    }
                     PhaseStart();
                 }
             }
@@ -641,19 +738,19 @@ public class NewManager : MonoBehaviour {
         {
             for (int j = 0; j < h; j++)
             {
-                float rand = Random.Range(0.01f, offset);
-                float jRand = Random.Range(0.05f, jOffset);
-                spawnPositions.Add(new Vector3(leftPoint.position.x - (tileSize + rand) * i - (offset + (tileSize / 2)), leftPoint.position.y, leftPoint.position.z - (tileSize + jRand) * j));
+                float rand = Random.Range(0, offset-0.05f);
+                float jRand = Random.Range(0, jOffset-0.05f);
+                spawnPositions.Add(new Vector3(leftPoint.position.x - (tileSize + offset) * i - (offset + (tileSize / 2)+rand), leftPoint.position.y, leftPoint.position.z - (tileSize + jOffset) * j+jRand));
             }
         }
 
         for (int i = 0; i <w/2 ; i++)//druha polovina kostek do prava
         {
-            float rand = Random.Range(0.01f, offset);
-            float jRand = Random.Range(0.05f, jOffset);
             for (int j = 0; j < h; j++)
             {
-                spawnPositions.Add(new Vector3(offset + (tileSize / 2) + rightPoint.position.x + (tileSize + rand) * i, rightPoint.position.y, rightPoint.position.z - (tileSize + jRand) * j));
+                float rand = Random.Range(0, offset - 0.05f);
+                float jRand = Random.Range(0, jOffset-0.05f);
+                spawnPositions.Add(new Vector3(offset + (tileSize / 2) + rightPoint.position.x + (tileSize + offset) * i-rand, rightPoint.position.y, rightPoint.position.z - (tileSize + jOffset) * j+jRand));
             }
         }
 
@@ -732,4 +829,40 @@ public class NewManager : MonoBehaviour {
         }
     }
     //**********************************************************************************************************************************
+    [Header("for changing animators...")]
+    public List<NpcModel> npcModels = new List<NpcModel>();
+    public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
+
+    private void CreateCharacter(NpcModel model, NpcBeahviour bahaviour)
+    {
+        GameObject npc = Instantiate(model.modelObject, npcPoint.position, npcPoint.rotation);
+        npc.GetComponent<Animator>().runtimeAnimatorController = bahaviour.behaviourAnimController as RuntimeAnimatorController;
+        theNpc = npc;
+        npcName = model.modelName;
+    }
+    private void DestroyCharacter()
+    {
+        Destroy(theNpc);
+        theNpc = null;
+        npcName = "";
+    }
+
+    [Header("Animation stuff")]
+    public string npcName = "";
+    public GameObject subtitlesCanvas;
+    public int whoWantsSubtitles = -1;
+
+}
+
+[System.Serializable]
+public class NpcModel
+{
+    public string modelName;
+    public GameObject modelObject;
+}
+[System.Serializable]
+public class NpcBeahviour
+{
+    public string bahaviourName;
+    public RuntimeAnimatorController behaviourAnimController;
 }
