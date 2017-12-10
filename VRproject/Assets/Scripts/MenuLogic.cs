@@ -28,6 +28,25 @@ public class MenuLogic: MonoBehaviour {//nosic dat a procedur sdilenych mezi vse
             Debug.Log("Multiple MenuLogics in one scene!");
         }
         instance = this;
+
+        //if there is a exp list file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
+        //"load" it
+        if (File.Exists(Application.dataPath + "/eee.xml"))
+        {
+            var ser = new XmlSerializer(typeof(ListOfExperiments));
+            using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Open))
+            {
+                availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
+            }
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        var ser = new XmlSerializer(typeof(ListOfExperiments));
+        var stream = new System.IO.FileStream(Application.dataPath+"/eee.xml", System.IO.FileMode.Create);
+        ser.Serialize(stream, availableExperiments);
+        stream.Close();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,6 +142,7 @@ public class ListOfConfigurations
 public class Experiment
 {
     public string name;
+    public string resultsFile;
     [XmlArray("Confiurations")]
     [XmlArrayItem("Configuration")]
     public List<Configuration> configs = new List<Configuration>();

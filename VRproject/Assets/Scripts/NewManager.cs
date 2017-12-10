@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class NewManager : MonoBehaviour {
 
@@ -85,6 +86,7 @@ public class NewManager : MonoBehaviour {
     public InputField playeridInputField;
     public GameObject popupPanel;
     public GameObject phaseLoadingPanel;
+    public GameObject testModeHighlight;
 
     //scrollview ui
     public GameObject phaseScrollContent;
@@ -99,6 +101,8 @@ public class NewManager : MonoBehaviour {
     private List<Texture2D> modelPictures = new List<Texture2D>();
     public Text expNameText;
 
+
+    private bool inTestMode = false;
 
     //testing worldspace results canvas
     [Header("for testing only")]
@@ -193,8 +197,11 @@ public class NewManager : MonoBehaviour {
 
     //********************************************************PHASES**********************************************************************************
 
-    public void StartExperiment(Experiment e)
+    public void StartExperiment(Experiment e,bool justTesting)
     {
+        inTestMode = justTesting;
+        testModeHighlight.SetActive(inTestMode);
+
         activeExperiment = e;
         //do stuff...
         expNameText.text = e.name;
@@ -215,11 +222,12 @@ public class NewManager : MonoBehaviour {
         //clear the configButtons...
         for (int i = configButtons.Count - 1; i >= 0; i--)
         {
-            Destroy(configButtons[i]);
+            Destroy(configButtons[i].gameObject);
             configButtons.RemoveAt(i);
         }
         //...
         activeExperiment = null;
+        expNameText.text = "";
     }
 
     public void OnQuitClicked()
@@ -255,7 +263,7 @@ public class NewManager : MonoBehaviour {
         texturesForCubes.Clear();
         modelPictures.Clear();
         tutTexturesForCubes.Clear();
-        DestroyCharacter();
+       // DestroyCharacter();
 
         //clear the phase scrollview...
         for (int i = phaseLabels.Count - 1; i >= 0; i--)
@@ -267,6 +275,10 @@ public class NewManager : MonoBehaviour {
         imageHolder.localScale = originalScale;
 
         DestroyCharacter();
+
+        activeConfig = null;
+
+        idInuput.text = "";
     }
     private void StartConfig(Configuration c)
     {
@@ -314,6 +326,10 @@ public class NewManager : MonoBehaviour {
             {
                 CreateCharacter(nm, nb);
             }
+        }
+        else
+        {
+            theNpc = null;
         }
 
         activeConfig = c;
@@ -365,7 +381,7 @@ public class NewManager : MonoBehaviour {
         imageHolder.localScale = originalScale;
         float x = activeConfig.puzzles[activePuzzleIndex].widthpx * tileSize * 3f;
         float y = activeConfig.puzzles[activePuzzleIndex].heigthpx * tileSize * 3f;
-        imageHolder.transform.localScale = new Vector3(imageHolder.transform.localScale.x * x, imageHolder.transform.localScale.y * y, 0.2f);
+        imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
 
         modelPictureFrame.material.mainTexture = modelPictures[activePuzzleIndex];
         GeneratePuzzleTiles(activeConfig.puzzles[activePuzzleIndex].heigthpx, activeConfig.puzzles[activePuzzleIndex].widthpx, texturesForCubes[activePuzzleIndex]);
@@ -381,6 +397,7 @@ public class NewManager : MonoBehaviour {
     }
     private void PhaseFinish()
     {
+        //adjust phase label highlight
         if (activeConfig.withTutorial)
         {
             phaseLabels[activePuzzleIndex + 2].GetComponent<Image>().color = Color.white;
@@ -389,11 +406,27 @@ public class NewManager : MonoBehaviour {
         {
             phaseLabels[activePuzzleIndex + 1].GetComponent<Image>().color = Color.white;
         }
-        if (!phaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat?
+
+        //check if it should save data
+        if (!inTestMode)
         {
-            Debug.Log("Ended too soon!!! The player did not finish, I should not save this data!!!");
+            if (!phaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat?
+            {
+                Debug.Log("Ended too soon!!! The player did not finish, I should not save this data!!!");
+            }
+            else
+            {
+                //save data
+                string dataToSave = idInuput.text + "," + activeConfig.name + "," + (activeConfig.timeLimit - timeLeft) + "," + skore;
+                if (File.Exists(activeExperiment.resultsFile))
+                {
+                    /////////File.AppendAllText(activeExperiment.resultsFile, dataToSave);///jo a mozna to neustale neotvirat a zevirat ten soubor....
+                    StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true);//true for append
+                    sw.WriteLine(dataToSave);
+                    sw.Close();
+                }
+            }
         }
-        //save data
         //...
         Debug.Log("-----------MainPhaseFinished-----------");
         Debug.Log("saving data to: ....ehm");
@@ -430,7 +463,7 @@ public class NewManager : MonoBehaviour {
         imageHolder.localScale = originalScale;
         float x = 5 * tileSize * 3f;
         float y = 3* tileSize * 3f;
-        imageHolder.transform.localScale = new Vector3(imageHolder.transform.localScale.x * x, imageHolder.transform.localScale.y * y, 0.2f);
+        imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
         modelPictureFrame.material.mainTexture = welcomePicture;
         modelPictureFrame.material.color = Color.white;
 
@@ -479,7 +512,7 @@ public class NewManager : MonoBehaviour {
         imageHolder.localScale = originalScale;
         float x = 5 * tileSize * 3f;
         float y = 3 * tileSize * 3f;
-        imageHolder.transform.localScale = new Vector3(imageHolder.transform.localScale.x * x, imageHolder.transform.localScale.y * y, 0.2f);
+        imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
         modelPictureFrame.material.mainTexture = tutorialPicture;
         modelPictureFrame.material.color = Color.white;
 
@@ -522,6 +555,8 @@ public class NewManager : MonoBehaviour {
         phaseFinished = false;
         nextButton.image.color = normalColor;
         skore = 0;
+       ///////////////////////////////////resize imageHolder
+       /////////////////////////////////imageHolder.localScale = originalScale;
     }
 
     //*****************************************SWITCHING********************************************************
@@ -529,9 +564,9 @@ public class NewManager : MonoBehaviour {
     public void TrySwitchPhase(bool skipCondition)
     {
         //specialne pro welcome phase - kontrola jestli bylo zadano unikatni playerID
-        if (inStart)
+        if (inStart&& !inTestMode)
         {
-            if ((!ContainsWhitespaceOnly(idInuput.text)) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
+            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValid(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
             {
                 messageOutput.text = "";
                 playeridInputField.interactable = false;
@@ -564,7 +599,10 @@ public class NewManager : MonoBehaviour {
 
         if (inStart)//if just finished start phase
         {
-            activeExperiment.ids.Add(idInuput.text);
+            if (!inTestMode)
+            {
+                activeExperiment.ids.Add(idInuput.text);
+            }
             FinishStartPhase();
             yield return new WaitForSeconds(1);
             if (activeConfig.withTutorial)
@@ -619,6 +657,18 @@ public class NewManager : MonoBehaviour {
         foreach (char c in s)
         {
             if (!char.IsWhiteSpace(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private bool IsValid(string s)//tedy neobsahuje carku (protoze se to pak bude ukladat do .csv )
+    {
+        foreach (char c in s)
+        {
+            if (c==',')
             {
                 return false;
             }

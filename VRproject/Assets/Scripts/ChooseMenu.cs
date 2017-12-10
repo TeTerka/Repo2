@@ -11,7 +11,9 @@ public class ChooseMenu : MonoBehaviour {
     public GameObject availableExpsScrollViewContent;
     public GameObject expInfoScrollViewContent;
     public GameObject errorText;
-    public GameObject InnerScrollViewContent;
+    private GameObject InnerScrollViewContent;
+    public GameObject otherErrorText;
+    public Text runButtonText;
 
     [Header("Popup")]
     public GameObject popupPanel;
@@ -24,7 +26,9 @@ public class ChooseMenu : MonoBehaviour {
     public GameObject puzzleInfoPanelPrefab;
 
     private List<Button> expButtons = new List<Button>();
+    private List<GameObject> expInfoPanels = new List<GameObject>();
     private bool loadSuccessful;
+    private string missingStuff;
 
     private void Start()
     {
@@ -50,6 +54,15 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnAvailableExpClick(Button b, Experiment e)//choose this experiment and show info about it (left click)
     {
+        if(e.ids.Count>0)
+        {
+            runButtonText.text = "Continue experiment";
+        }
+        else
+        {
+            runButtonText.text = "Start experiment";
+        }
+
         loadSuccessful = true;
         //choose it
         chosenExperiment = e;
@@ -64,10 +77,12 @@ public class ChooseMenu : MonoBehaviour {
             Destroy(expInfoScrollViewContent.transform.GetChild(i).gameObject);
         }
         //show info
+        expInfoPanels.Clear();
         foreach (Configuration c in e.configs)
         {
             //instantiate a config info panel from prefab and fill it out with config info
             var p = Instantiate(expConfInfoPanelPrefab, expInfoScrollViewContent.transform);
+            expInfoPanels.Add(p);
             List<Text> texts = new List<Text>();
             p.GetComponentsInChildren<Text>(texts);
             texts[0].text = c.name;
@@ -100,8 +115,14 @@ public class ChooseMenu : MonoBehaviour {
                 {
                     loadSuccessful = false;
                     images[1].sprite = MenuLogic.instance.missingImage;
+                    missingStuff += c.puzzles[j].pathToImage+"\n";
                 }
                 //**************************************************************************************
+            }
+            if(!System.IO.File.Exists(e.resultsFile))
+            {
+                loadSuccessful = false;
+                missingStuff += e.resultsFile + "\n";
             }
         }
     }
@@ -119,7 +140,14 @@ public class ChooseMenu : MonoBehaviour {
     public void DeleteExperiment(Button b,Experiment e)//yes click
     {
         if (chosenExperiment == e)
+        {
+            for (int i = expInfoPanels.Count- 1; i >= 0; i--)
+            {
+                Destroy(expInfoPanels[i]);
+                expInfoPanels.RemoveAt(i);
+            }
             chosenExperiment = null;
+        }
         expButtons.Remove(b);
         Destroy(b.gameObject);
         MenuLogic.instance.availableExperiments.experiments.Remove(e);
@@ -137,11 +165,21 @@ public class ChooseMenu : MonoBehaviour {
     {
         if (chosenExperiment != null && loadSuccessful)
         {
-            Debug.Log("testing " + chosenExperiment.name);
+            NewManager.instance.StartExperiment(chosenExperiment, true);//true = only test run of the experiment (no data will be saved etc.)
+            MenuLogic.instance.chooseMenuCanvas.SetActive(false);
+            MenuLogic.instance.spectatorCanvas.SetActive(true);
         }
         else
         {
-            errorText.SetActive(true);
+            if (chosenExperiment == null)
+            {
+                errorText.SetActive(true);
+            }
+            if (!loadSuccessful)
+            {
+                otherErrorText.gameObject.SetActive(true);
+                otherErrorText.GetComponentInChildren<Text>().text = "missing filee(s) at:\n" + missingStuff;
+            }
         }
     }
 
@@ -149,13 +187,21 @@ public class ChooseMenu : MonoBehaviour {
     {
         if (chosenExperiment != null && loadSuccessful)
         {
-            NewManager.instance.StartExperiment(chosenExperiment);
+            NewManager.instance.StartExperiment(chosenExperiment,false);//false = real experiment
             MenuLogic.instance.chooseMenuCanvas.SetActive(false);
             MenuLogic.instance.spectatorCanvas.SetActive(true);
         }
         else
         {
-            errorText.SetActive(true);
+            if (chosenExperiment == null)
+            {
+                errorText.SetActive(true);
+            }
+            if (!loadSuccessful)
+            {
+                otherErrorText.gameObject.SetActive(true);
+                otherErrorText.GetComponentInChildren<Text>().text = "missing image(s) at:\n"+missingStuff;
+            }
         }
     }
 

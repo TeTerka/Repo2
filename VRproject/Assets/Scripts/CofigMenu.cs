@@ -175,7 +175,7 @@ public class CofigMenu : MonoBehaviour {
     {
         //create only if everything is correctly filled out
         bool ok = true;
-        if (configNameField.text == null || MenuLogic.instance.ContainsWhitespaceOnly(configNameField.text))
+        if (configNameField.text == null || MenuLogic.instance.ContainsWhitespaceOnly(configNameField.text)||!IsValid(configNameField.text))
         {
             ok = false;
             configNameField.image.color = Color.red;
@@ -283,5 +283,17 @@ public class CofigMenu : MonoBehaviour {
         //switch to expMenu
         MenuLogic.instance.expMenuCanvas.SetActive(true);
         MenuLogic.instance.confMenuCanvas.SetActive(false);
+    }
+
+    private bool IsValid(string s)//tedy neobsahuje carku (protoze se to pak bude ukladat do .csv )
+    {
+        foreach (char c in s)
+        {
+            if (c == ',')
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

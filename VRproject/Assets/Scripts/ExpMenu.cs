@@ -31,21 +31,21 @@ public class ExpMenu : MonoBehaviour {
 
     private void Start()
     {
-        //if there is a config file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
-        //"load" it
-        if (File.Exists(Application.dataPath + "/fff.xml"))
-        {
-            var ser = new XmlSerializer(typeof(ListOfConfigurations));
-            using (var stream = new FileStream(Application.dataPath + "/fff.xml", FileMode.Open))
-            {
-                MenuLogic.instance.availableConfigs = ser.Deserialize(stream) as ListOfConfigurations;
-            }
-        }
-
-        for (int i = 0; i < MenuLogic.instance.availableConfigs.configs.Count; i++)
-        {
-            AddOneNewConfig(MenuLogic.instance.availableConfigs.configs[i]);
-        }
+        ////if there is a config file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
+        ////"load" it
+        //if (File.Exists(Application.dataPath + "/fff.xml"))
+        //{
+        //    var ser = new XmlSerializer(typeof(ListOfConfigurations));
+        //    using (var stream = new FileStream(Application.dataPath + "/fff.xml", FileMode.Open))
+        //    {
+        //        MenuLogic.instance.availableConfigs = ser.Deserialize(stream) as ListOfConfigurations;
+        //    }
+        //}
+        //
+        //for (int i = 0; i < MenuLogic.instance.availableConfigs.configs.Count; i++)
+        //{
+        //    AddOneNewConfig(MenuLogic.instance.availableConfigs.configs[i]);
+        //}
     }
 
     public void AddOneNewConfig(Configuration c)//gets called after creating new configuration
@@ -186,6 +186,24 @@ public class ExpMenu : MonoBehaviour {
         {
             e.configs.Add(chosenConfigs[i]);
         }
+        //create folder for results
+        int j = 0;
+        while(Directory.Exists(Application.dataPath + "/" + e.name + j))
+        {
+            j++;
+        }
+        Directory.CreateDirectory(Application.dataPath +"/"+ e.name + j);
+        //create file for results
+        File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
+        e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
+        //creta file with experiment info
+        var ser = new XmlSerializer(typeof(ListOfConfigurations));
+        var stream = new System.IO.FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", System.IO.FileMode.Create);
+        ListOfConfigurations loc = new ListOfConfigurations();
+        loc.configs = e.configs;
+        ser.Serialize(stream, loc);
+        stream.Close();
+
         //add it to the list
         MenuLogic.instance.availableExperiments.experiments.Add(e);
         /////////////////////////////////////////tohle asi nebude pri kazdem save ne?.....co treba OnAppQuit nebo tak neco...

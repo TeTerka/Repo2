@@ -58,10 +58,12 @@ public class PuzzleTile : GragableObject {
             //ManagerScript.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
             NewManager.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
         }
+        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dolo OnPressed...)
     }
     public override void OnTriggerPressed(ControllerScript controller)
     {
         base.OnTriggerPressed(controller);
+        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
         if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne
         {
             //ManagerScript.instance.OnCubeRemoved(placedAt.Matches);
