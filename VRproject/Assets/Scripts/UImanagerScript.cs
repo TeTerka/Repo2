@@ -3,22 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-//bude obsahovat obsluhy klikani na vsemozne buttony
+//ovladani pro NewSpectatorCanvas
+
 public class UImanagerScript : MonoBehaviour {
 
-    //stuff for start button
-    public GameObject setupCanvas;
-    public GameObject spectatorCanvas;
-    public Toggle NPCtoggle;
-    public List<Toggle> themes = new List<Toggle>();
-    public Text pathText;
-
-    //stuff for changeCam button
+    //prepinani kamer
     public List<GameObject> cams = new List<GameObject>();
     private int camCount;
     private int currentCam;
 
-    //stuff for yes/no buttons
+    //vyskakujici yes/no okno
     public GameObject popupPanel;
 
     private void Start()
@@ -27,25 +21,7 @@ public class UImanagerScript : MonoBehaviour {
         currentCam = 0;
     }
 
-   //////////////////////////(na zaklade dat ze vstupu) spusti experiment
-   ////////////////////////public void StartButtonClicked()
-   ////////////////////////{
-   ////////////////////////    spectatorCanvas.SetActive(true);
-   ////////////////////////    setupCanvas.SetActive(false);
-   ////////////////////////
-   ////////////////////////    int themeIndex = 0;
-   ////////////////////////    for (int i = 0; i < themes.Count; i++)
-   ////////////////////////    {
-   ////////////////////////        if(themes[i].isOn)
-   ////////////////////////        {
-   ////////////////////////            themeIndex = i;
-   ////////////////////////            break;
-   ////////////////////////        }
-   ////////////////////////    }
-   ////////////////////////    ManagerScript.instance.InitiationAfterSetup(NPCtoggle.isOn,themeIndex,pathText.text);
-   ////////////////////////}
-
-    //prepina mezi ruznymi kamerami pro koordinatora
+    //v cyklu prepina mezi ruznymi kamerami pro koordinatora
     public void ChangeCamButtonClick()
     {
         cams[currentCam].SetActive(false);
@@ -73,10 +49,6 @@ public class UImanagerScript : MonoBehaviour {
         NewManager.instance.TrySwitchPhase(true);
     }
 
-    public void QuitButtonClick()//pro aktualne "rozehranou" fazi to nevadi, proste nebude dokoncena, neulozi se jeji data...
-    {
-        Application.Quit();
-    }
 
     public void RestartButtonClick()
     {

@@ -138,16 +138,7 @@ public class NewManager : MonoBehaviour {
         }
         instance = this;
 
-        //development vr unavailble stuff
-        //if (SteamVR.instance != null)
-        //{
-           // ActivateRig(VRavailable);
-            ScaleRoomToFitPlayArea();
-       //}
-       //else
-       //{
-       //    ActivateRig(VRunavailable);
-       //}
+        ScaleRoomToFitPlayArea();
 
         //obsah sceny pred dokoncenim setupu
         modelPictureFrame.material.mainTexture = null;
@@ -155,13 +146,7 @@ public class NewManager : MonoBehaviour {
         ////////////////////////////////////////theNpc.gameObject.SetActive(false);
     }
 
-    //private void ActivateRig(GameObject rig)
-    //{
-    //    VRavailable.SetActive(rig == VRavailable);
-    //    VRunavailable.SetActive(rig == VRunavailable);
-    //}
-
-    private void ScaleRoomToFitPlayArea()
+    private void ScaleRoomToFitPlayArea()//scale the virtual room so that it is the same size as the real room
     {
         //get info from play area
         Valve.VR.HmdQuad_t rect = new Valve.VR.HmdQuad_t();
@@ -172,30 +157,29 @@ public class NewManager : MonoBehaviour {
             System.Threading.Thread.Sleep(1000);//je ok takhle to cely uspat???
         }
 
+        //count new scale
         float floorScaleFactorX = editorFloorScale.localScale.x;//sirka podlahy v editoru
-        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//delka podlahy v editoru kam dosahuje camera rig
-        //Vector3 newScale = new Vector3(floorScaleFactorX / Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0), 1, floorScaleFactorZ / Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2));
+        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//delka podlahy v editoru kam dosahuje camera rig        
         Vector3 newScale = new Vector3(Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0)/ floorScaleFactorX, 1,Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2)/ floorScaleFactorZ);
         float safetyBorder = 0.02f;
         newScale.x += safetyBorder;
         newScale.z += safetyBorder;
-        //scale room
+        //scale the room
         level.localScale = newScale;
-        //move npc and camera rig
-        /////////////////////////////////////////////////////////////////theNpc.position = npcPoint.position;
+        //move camera rig to original position
         this.transform.position = cameraRigPoint.position;
+
         ////adjust model picture height (to preserve the correct ratio)
         ////imageHolder.localScale = new Vector3(imageHolder.localScale.x, imageHolder.localScale.y * floorScaleFactorX / Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0), imageHolder.localScale.z);
-        //adjust container size (to be squares)
+        originalScale = imageHolder.localScale;
+
+        //adjust container size (to be squares) (aka cancel the scaling on them)
         containersHolder.transform.localScale = new Vector3(1 / containersHolder.transform.lossyScale.x, 1, 1 / containersHolder.transform.lossyScale.z);
         //adjust tile size (to be cubes)
         tileHolder.transform.localScale = new Vector3(1 / tileHolder.transform.lossyScale.x, 1, 1 / tileHolder.transform.lossyScale.z);
-
-
-        originalScale = imageHolder.localScale;
     }
 
-    //********************************************************PHASES**********************************************************************************
+    //************************************** STARTING & FINISHING EXPERIMENTS & CONFIGURATIONS *****************************************************
 
     public void StartExperiment(Experiment e,bool justTesting)
     {
@@ -203,29 +187,29 @@ public class NewManager : MonoBehaviour {
         testModeHighlight.SetActive(inTestMode);
 
         activeExperiment = e;
-        //do stuff...
         expNameText.text = e.name;
-        //fill out the configs scrollview...
+        //fill out the configs scrollview
         for (int i = 0; i < e.configs.Count; i++)
         {
             int iForDelegate = i;
             var p = Instantiate(configNameButtonPrafab, configScrollContent.transform);
             p.GetComponentInChildren<Text>().text = e.configs[i].name;
             configButtons.Add(p);
-            p.onClick.AddListener(delegate { if (inStart) { FinishStartPhase(); FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            p.onClick.AddListener(delegate { if (inStart) { FinishStartPhase(); FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });
         }
 
+        //start the first configuration (obviously every experiment must have at least one)
         StartConfig(e.configs[0]);
     }
-    private void FinishExperiment()//can be called only after current configuration was correctly finished
+    private void FinishExperiment()//should be called only after current configuration was correctly finished
     {
-        //clear the configButtons...
+        //clear the configButtons
         for (int i = configButtons.Count - 1; i >= 0; i--)
         {
             Destroy(configButtons[i].gameObject);
             configButtons.RemoveAt(i);
         }
-        //...
+        //...anything else?
         activeExperiment = null;
         expNameText.text = "";
     }
@@ -252,6 +236,7 @@ public class NewManager : MonoBehaviour {
         FinishExperiment();
         MenuLogic.instance.spectatorCanvas.SetActive(false);
         MenuLogic.instance.chooseMenuCanvas.SetActive(true);
+        //staci to takhle, nebo jeste nejake specialni chovani....
     }
     private void FinishCurrentConfig()
     {
@@ -282,7 +267,8 @@ public class NewManager : MonoBehaviour {
     }
     private void StartConfig(Configuration c)
     {
-        //fill out the phase scrollview...
+        activeConfig = c;
+        //fill out the phase scrollview
         var p = Instantiate(namePlatePrefab, phaseScrollContent.transform);
         p.GetComponentInChildren<Text>().text = "start phase";
         phaseLabels.Add(p);
@@ -300,10 +286,9 @@ public class NewManager : MonoBehaviour {
         }
 
         //prepare npc
-        //////////////////////////////////////////theNpc.gameObject.SetActive(c.withNPC);
-        //////////////////////////////////////////theNpc.position = npcPoint.position;
         if(c.withNPC)
         {
+            //search for the chosen model anf behavior (by name), then call CreateCharacter
             NpcModel nm = null;
             foreach (NpcModel model in npcModels)
             {
@@ -332,29 +317,27 @@ public class NewManager : MonoBehaviour {
             theNpc = null;
         }
 
-        activeConfig = c;
-        //create textures for tutorial
+        //create textures for cubes in tutorial
         if (c.withTutorial)
         {
             tutTexturesForCubes=CreateTexturesForCubes(2, 2, tutInputPicture);
         }
         //create textures for puzzles
-        //and create txtures for model pictures
+        //and create textures for model picture(s)
         for (int i = 0; i < c.puzzles.Count; i++)
         {
-            Texture2D tt;
-            if (MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage) == null)//v pripade chyby nahrad obrazek vykricnikem....ale nic neukoncuj, je to jen varovani
+            Texture2D tt;//textura celeho vzoroveho obrazku
+            if ((tt=MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage)) == null)//v pripade chyby nahrad obrazek vykricnikem....ale nic neukoncuj, je to jen varovani
             {
                 texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.missingImage.texture));
                 tt = MenuLogic.instance.missingImage.texture;
             }
             else//jinak normalne nahraj obrazky ze souboru
             {
-                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage)));
-                tt = MenuLogic.instance.LoadTexture(activeConfig.puzzles[i].pathToImage);
+                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx,tt));
             }
             int sideWidth = Mathf.Min(tt.height / activeConfig.puzzles[i].heigthpx, tt.width / activeConfig.puzzles[i].widthpx);
-            Texture2D t = new Texture2D(sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx);
+            Texture2D t = new Texture2D(sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx);//textura oriznuteho vzoroveho obrazku
             Color[] block = tt.GetPixels(0, 0, sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx);
             t.SetPixels(0, 0, sideWidth * activeConfig.puzzles[i].widthpx, sideWidth * activeConfig.puzzles[i].heigthpx, block);
             t.Apply();
@@ -366,9 +349,12 @@ public class NewManager : MonoBehaviour {
         StartStart();
     }
 
-    private void PhaseStart()
+    //********************************************************* PHASES **********************************************************************
+
+    private void PhaseStart()//sets up one puzzle
     {
         activePuzzleIndex++;
+        //visualise current phase
         if (activeConfig.withTutorial)
         {
             phaseLabels[activePuzzleIndex + 2].GetComponent<Image>().color = Color.green;
@@ -377,13 +363,14 @@ public class NewManager : MonoBehaviour {
         {
             phaseLabels[activePuzzleIndex + 1].GetComponent<Image>().color = Color.green;
         }
-        //testing scaling of the model picture...
+        //scaling of the model picture
         imageHolder.localScale = originalScale;
-        float x = activeConfig.puzzles[activePuzzleIndex].widthpx * tileSize * 3f;
+        float x = activeConfig.puzzles[activePuzzleIndex].widthpx * tileSize * 3f;//=>model picture 3x vestsi nez mrizka na skladani
         float y = activeConfig.puzzles[activePuzzleIndex].heigthpx * tileSize * 3f;
         imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
-
         modelPictureFrame.material.mainTexture = modelPictures[activePuzzleIndex];
+
+        //create cubes and containers
         GeneratePuzzleTiles(activeConfig.puzzles[activePuzzleIndex].heigthpx, activeConfig.puzzles[activePuzzleIndex].widthpx, texturesForCubes[activePuzzleIndex]);
 
         //start timer
@@ -393,11 +380,11 @@ public class NewManager : MonoBehaviour {
         //dale by melo spustit spravnou animaci
         if(theNpc!=null)
             theNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
-        //a zecit resit nejake logovani a ukladani vysledku a tak...
+        //a zacit resit nejake logovani a ukladani vysledku a tak...
     }
     private void PhaseFinish()
     {
-        //adjust phase label highlight
+        //cancel phase label highlight
         if (activeConfig.withTutorial)
         {
             phaseLabels[activePuzzleIndex + 2].GetComponent<Image>().color = Color.white;
@@ -417,19 +404,29 @@ public class NewManager : MonoBehaviour {
             else
             {
                 //save data
-                string dataToSave = idInuput.text + "," + activeConfig.name + "," + (activeConfig.timeLimit - timeLeft) + "," + skore;
+                string dataToSave;
+                if (timeLeft <= 0)//pokud skoncil protoze mu dosel cas
+                {
+                    dataToSave = idInuput.text + "," + activeConfig.name + "," + "max" + "," + skore;
+                }
+                else//pokud skoncil tim ze dostavel puzzle
+                {
+                    dataToSave = idInuput.text + "," + activeConfig.name + "," + (activeConfig.timeLimit - timeLeft) + "," + skore;
+                }
                 if (File.Exists(activeExperiment.resultsFile))
                 {
-                    /////////File.AppendAllText(activeExperiment.resultsFile, dataToSave);///jo a mozna to neustale neotvirat a zevirat ten soubor....
                     StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true);//true for append
                     sw.WriteLine(dataToSave);
                     sw.Close();
+                }
+                else
+                {
+                    Debug.Log("error, missing results file!!!");
                 }
             }
         }
         //...
         Debug.Log("-----------MainPhaseFinished-----------");
-        Debug.Log("saving data to: ....ehm");
         Debug.Log("id: " + idInuput.text);
         Debug.Log("hasNPC: " + activeConfig.withNPC);
         Debug.Log("time: " + (activeConfig.timeLimit - timeLeft));
@@ -447,17 +444,17 @@ public class NewManager : MonoBehaviour {
         resultsText.text += "\n NOW TAKE OFF THE HEADSET";
 
         BasicFinish();
-        //reset time
+        //reset timer
         timeLeft = 0;
         countingDown = false;
         timerText.text = "0:00.0";
         //...
     }
 
-    public void StartStart()
+    public void StartStart()//sets up the start phase
     {
+        //general preparations...
         playeridInputField.interactable = true;
-
         inStart = true;
         phaseLabels[0].GetComponent<Image>().color = Color.green;
         imageHolder.localScale = originalScale;
@@ -466,20 +463,21 @@ public class NewManager : MonoBehaviour {
         imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
         modelPictureFrame.material.mainTexture = welcomePicture;
         modelPictureFrame.material.color = Color.white;
+        nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
 
+        //create the start cube
         List<Texture2D> list = new List<Texture2D>();
         for (int i = 0; i < 6; i++)
         {
             list.Add(startCubeTexture);
         }
-
         GeneratePuzzleTiles(1, 1, list);
 
+        //make it possible to switch to different configuration
         foreach (var item in configButtons)
         {
             item.interactable = true;
         }
-        nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
 
         //animace NPC
         if (theNpc != null)
@@ -496,6 +494,7 @@ public class NewManager : MonoBehaviour {
         phaseLabels[0].GetComponent<Image>().color = Color.white;
         inStart = false;
 
+        //disable the option to switch to different configuration
         foreach (var item in configButtons)
         {
             item.interactable = false;
@@ -505,8 +504,9 @@ public class NewManager : MonoBehaviour {
 
     }
 
-    public void StartTutorial()
+    public void StartTutorial()//sets up tutorial phase - ADD OPTION TO SELECT YOUR OWN TUTORIAL PICTURE ETC. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     {
+        //general preparations...
         inTut = true;
         phaseLabels[1].GetComponent<Image>().color = Color.green;
         imageHolder.localScale = originalScale;
@@ -516,6 +516,7 @@ public class NewManager : MonoBehaviour {
         modelPictureFrame.material.mainTexture = tutorialPicture;
         modelPictureFrame.material.color = Color.white;
 
+        //create cubes and containers
         GeneratePuzzleTiles(2, 2, tutTexturesForCubes);
 
         //animace NPC
@@ -550,13 +551,11 @@ public class NewManager : MonoBehaviour {
             Destroy(container.gameObject);
         }
         containerList.Clear();
-        //clear texts
+        //clear other info
         scoreText.text = "0";
         phaseFinished = false;
         nextButton.image.color = normalColor;
         skore = 0;
-       ///////////////////////////////////resize imageHolder
-       /////////////////////////////////imageHolder.localScale = originalScale;
     }
 
     //*****************************************SWITCHING********************************************************
@@ -564,16 +563,16 @@ public class NewManager : MonoBehaviour {
     public void TrySwitchPhase(bool skipCondition)
     {
         //specialne pro welcome phase - kontrola jestli bylo zadano unikatni playerID
-        if (inStart&& !inTestMode)
+        if (inStart && !inTestMode)
         {
-            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValid(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
+            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
             {
                 messageOutput.text = "";
                 playeridInputField.interactable = false;
             }
             else
             {
-                messageOutput.text = "Player ID must be filled and must be unique!!!";
+                messageOutput.text = "Player ID must be filled, must not contain commas or quotes and must be unique!!!";
                 return;
             }
         }
@@ -590,7 +589,7 @@ public class NewManager : MonoBehaviour {
     }
 
     //mezi fazemi chvilku cekat....hlavne na konci main phase, aby mohl v klidu sundat headset...
-    //ale chtelo by to jeste vylepsit, takhle se pri tom cekani da ledacos pokazit necekany,m klikanim a tak...!!!!!!!!!!!!!!!!!!!!!!!
+    //ale chtelo by to jeste vylepsit, takhle se pri tom cekani da ledacos pokazit necekany,m klikanim a tak...
     private IEnumerator SwitchPhase()
     {
         phaseLoadingPanel.SetActive(true);//zamezi koordinatorovi na cokoliv klikat v prubeho prepinani faze
@@ -621,8 +620,8 @@ public class NewManager : MonoBehaviour {
             {
                 FinishTutorial();
                 yield return new WaitForSeconds(1);
-                activePuzzleIndex = -1;//od ted zacinaji main puzzly
-                if (activeConfig.puzzles.Count==1)
+                activePuzzleIndex = -1;//od ted zacinaji main puzzly, pripravi se prvni puzzle
+                if (activeConfig.puzzles.Count==1)//pokud je v aktualni konfiguraci jen jeden puzzle, je to zaroven posledni puzzle
                 {
                     nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
                 }
@@ -634,7 +633,7 @@ public class NewManager : MonoBehaviour {
                 {
                     playeridInputField.interactable = true;
                     PhaseFinish();
-                    yield return new WaitForSeconds(1);
+                    yield return new WaitForSeconds(2);
 
                     StartStart();
                 }
@@ -642,7 +641,7 @@ public class NewManager : MonoBehaviour {
                 {
                     PhaseFinish();
                     yield return new WaitForSeconds(1);
-                    if (activePuzzleIndex == activeConfig.puzzles.Count - 2)
+                    if (activePuzzleIndex == activeConfig.puzzles.Count - 2)//pokud nasleduje posledni puzzle...
                     {
                         nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
                     }
@@ -650,8 +649,9 @@ public class NewManager : MonoBehaviour {
                 }
             }
         }
-        phaseLoadingPanel.SetActive(false);
+        phaseLoadingPanel.SetActive(false);//=>koordinator zase muze volne klikat
     }
+    //********************************************** POMOCNE FUNKCE ***************************************************************************
     private bool ContainsWhitespaceOnly(string s)
     {
         foreach (char c in s)
@@ -664,11 +664,11 @@ public class NewManager : MonoBehaviour {
         return true;
     }
 
-    private bool IsValid(string s)//tedy neobsahuje carku (protoze se to pak bude ukladat do .csv )
+    private bool IsValidForCsv(string s)//tedy neobsahuje carku (ani uvozovky projistotu)(protoze se to pak bude ukladat do .csv )
     {
         foreach (char c in s)
         {
-            if (c==',')
+            if (c==','||c=='"')
             {
                 return false;
             }
@@ -677,17 +677,17 @@ public class NewManager : MonoBehaviour {
     }
 
 
-    //////////////////////********************************DREATING TEXTURES, CONTAINERS, TILES...********************************************
-    private List<Texture2D> CreateTexturesForCubes(int h, int w, Texture2D input)
+    //////////////////////********************************CREATING TEXTURES, CONTAINERS, TILES...********************************************
+    private List<Texture2D> CreateTexturesForCubes(int h, int w, Texture2D input)//z obrazku input vyrobi h*w textur pro jednotlive dilky skladacky
     {
-        int sideWidth = Mathf.Min(input.height / h, input.width / w);
+        int sideWidth = Mathf.Min(input.height / h, input.width / w);//=> kdyz to nebude vychazet presne, obrazek bude oriznuty
         List<Texture2D> result = new List<Texture2D>();
 
         for (int i = 0; i < h; i++)
         {
             for (int j = 0; j < w; j++)
             {
-                Texture2D newTexture = new Texture2D(3 * sideWidth, 3 * sideWidth, TextureFormat.RGB565, false); //je to false potreba?                                                       
+                Texture2D newTexture = new Texture2D(3 * sideWidth, 3 * sideWidth, TextureFormat.RGB565, false); //je to false potreba?     
                 //read block of data (one square of puzzle) from image
                 Color[] block = input.GetPixels(sideWidth * j, sideWidth * i, sideWidth, sideWidth);
                 //write it to new texture to the right position        
@@ -713,6 +713,8 @@ public class NewManager : MonoBehaviour {
         }
     }
 
+    //cretes the cubes, adds texture to them and places them on the table
+    //also creates the containers
     private void GeneratePuzzleTiles(int h, int w, List<Texture2D> textureSource)
     {
         //umisti sparavne containersHolder
@@ -728,8 +730,11 @@ public class NewManager : MonoBehaviour {
                 c.transform.localScale = new Vector3(tileSize, 0.02f, tileSize);
                 c.transform.localPosition = new Vector3(-j * tileSize, 0, -i * tileSize);//poradi generovani (znamenka) je upraveno aby sedely indexy (viz obr cislovani mrizky)
 
-                c.GetComponent<TileContainer>().Initialize(k);//prefab musi mit TileContainer, jinak to tady spadne...
-                containerList.Add(c.GetComponent<TileContainer>());
+                TileContainer tc;
+                if ((tc=c.GetComponent<TileContainer>()) == null)//kdyby prefab nemel tileContainer script, tak mu ho to doda
+                    c.gameObject.AddComponent<TileContainer>();
+                tc.Initialize(k);
+                containerList.Add(tc);
                 k++;
             }
         }
@@ -742,7 +747,7 @@ public class NewManager : MonoBehaviour {
         {
             for (int j = 0; j < w; j++)
             {
-                //get random rotation
+                //get random rotation - nakonec ne, protoze je chci pro prehlednost tou plnou stranou nahoru
                 Vector3[] axies = new Vector3[] { Vector3.forward, Vector3.down, Vector3.right, Vector3.back, Vector3.up, Vector3.left };
                 //int randomIndex1 = Random.Range(0, 6);
                 //int randomIndex2 = Random.Range(0, 6);
@@ -755,12 +760,21 @@ public class NewManager : MonoBehaviour {
                 t.transform.localScale = new Vector3(tileSize * 100, tileSize * 100, tileSize * 100);// *100 protoze moje krychle z blenderu je omylem 100x mensi nez krychle v unity...
 
                 //add the texture
-                MeshRenderer mr = t.GetComponent<MeshRenderer>();//prefab musi mit MeshRenderer, jinak to tady spadne...
+                MeshRenderer mr;
+                if ((mr = t.GetComponent<MeshRenderer>()) == null)//kdyby prefab nemel meshRenderer, tak mu ho to doda
+                {
+                    mr = t.gameObject.AddComponent<MeshRenderer>();
+                }
                 mr.material = new Material(Shader.Find("Standard"));
                 mr.material.mainTexture = textureSource[k];
 
                 //index
-                t.GetComponent<PuzzleTile>().Initialize(k, spawnPositions[k]);//prefab musi mit PuzzleTile, jinak to tady spadne...//tady bylo <Tile> v old grab system
+                PuzzleTile pt;
+                if ((pt = t.GetComponent<PuzzleTile>()) == null)//kdyby prefab nemel PuzzleTile script, tak mu ho to doda
+                {
+                    pt = t.gameObject.AddComponent<PuzzleTile>();
+                }
+                pt.Initialize(k, spawnPositions[k]);
 
                 tileList.Add(t);
                 k++;
@@ -772,19 +786,21 @@ public class NewManager : MonoBehaviour {
     [Header("for generating spawnpoints")]
     public Transform leftPoint;
     public Transform rightPoint;
-    private List<Vector3> spawnPositions = new List<Vector3>();
-    private void GenerateSpawnPoints(int h, int w)
+    private List<Vector3> spawnPositions = new List<Vector3>();//seznam vsech spawnpointu (vznikne v GenerateSpawnPoints) 
+    private void GenerateSpawnPoints(int h, int w)//vyrobi spawnpointy na stole tak, aby se tam vsechno veslo a nebylo to uplne v pravidelne mrizce ani uplne nahodne na hromade
     {
         spawnPositions.Clear();
+        //nejprve prida do seznamu rucne naklikane spawnpointy (napr. ty pod stolem)
         foreach (Transform point in spawnPoints)
         {
             spawnPositions.Add(point.position);
         }
 
+        //pak vyrobi dalsi, aby se tam vsechny dilky vesly
         float offset = tileSize/2;
         float jOffset = tileSize;
 
-        for (int i = 0; i < Mathf.Ceil((float)w / 2); i++)//polovina kostek do leva
+        for (int i = 0; i < Mathf.Ceil((float)w / 2); i++)//polovina kostek na leve kridlo stolu
         {
             for (int j = 0; j < h; j++)
             {
@@ -794,7 +810,7 @@ public class NewManager : MonoBehaviour {
             }
         }
 
-        for (int i = 0; i <w/2 ; i++)//druha polovina kostek do prava
+        for (int i = 0; i <w/2 ; i++)//druha polovina kostek na prave kridlo stolu
         {
             for (int j = 0; j < h; j++)
             {
@@ -817,12 +833,14 @@ public class NewManager : MonoBehaviour {
             float seconds = timeLeft % 60;
             timerText.text = string.Format("{0:00}:{1:00.0}", minutes, seconds);
 
+            //kontrola dobehnuti timeru
             if (timeLeft <= 0)
             {
                 countingDown = false;
                 phaseFinished = true;
                 nextButton.image.color = new Color(1, 0.5f, 0);
             }
+            //update timeru
             timeLeft -= Time.deltaTime;
         }
 
@@ -873,17 +891,18 @@ public class NewManager : MonoBehaviour {
                     phaseFinished = true;
                     nextButton.image.color = highlightColor;
                     //do stuff!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    //....or maybe not, maybe nothing should happen and all the data saving and stuff should wait until the coordinator presses Save Results button...
                     Debug.Log("puzzle completed, huray!!!");
                 }
             }
         }
     }
-    //**********************************************************************************************************************************
-    [Header("for changing animators...")]
-    public List<NpcModel> npcModels = new List<NpcModel>();
+    //********************************************************** NPC stuff ***************************************************************
+    [Header("for changing NPC models and behaviours")]
+    public List<NpcModel> npcModels = new List<NpcModel>();//vsechny musi mit komponentu Animator!
     public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
 
-    private void CreateCharacter(NpcModel model, NpcBeahviour bahaviour)
+    private void CreateCharacter(NpcModel model, NpcBeahviour bahaviour)//instanciuje zvoleny model npc a pripoji k nemu zvoleny animator (chovani)
     {
         GameObject npc = Instantiate(model.modelObject, npcPoint.position, npcPoint.rotation);
         npc.GetComponent<Animator>().runtimeAnimatorController = bahaviour.behaviourAnimController as RuntimeAnimatorController;
@@ -897,13 +916,16 @@ public class NewManager : MonoBehaviour {
         npcName = "";
     }
 
+    //new stuff*****************************************************
     [Header("Animation stuff")]
     public string npcName = "";
     public GameObject subtitlesCanvas;
     public int whoWantsSubtitles = -1;
+    //********f*****************************************************
 
 }
 
+//krome toho ze je to model, musi to mit jeste nejake jmeno, podle ktereho se model vybere v menu create config (stejne tak behaviour)
 [System.Serializable]
 public class NpcModel
 {

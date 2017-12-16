@@ -66,8 +66,6 @@ public class PuzzleTile : GragableObject {
         gameObject.GetComponent<BoxCollider>().size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
         if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne
         {
-            //ManagerScript.instance.OnCubeRemoved(placedAt.Matches);
-            NewManager.instance.OnCubeRemoved(placedAt.Matches);
             ClearInfoAboutPlacing();
         }
         Unfreez();//pokud beru dilek z mrizky...a nebo projistotu vzdy
@@ -101,6 +99,7 @@ public class PuzzleTile : GragableObject {
     private void ClearInfoAboutPlacing()
     {
         placedAt.isEmpty = true;
+        NewManager.instance.OnCubeRemoved(placedAt.Matches);
         placedAt.Matches = false;
         placedAt = null;
         collidingContainer = null;
@@ -113,13 +112,16 @@ public class PuzzleTile : GragableObject {
             Unfreez();
             ClearInfoAboutPlacing();
         }
-        if (!IsFree())//pokud je v ruce, pred respawnem by jeste mel byt upusten - ne, vlastne nemel, jen se musi nastavit ze ovladac uz nic nedrzi
+        if (!IsFree())//pokud je v ruce, pred respawnem by jeste mel byt nasilne upusten (tedy zavola se OnSnatched())
         {
-            //CurrentController.StopHoldingIt();//to se ted pouziva misto currentController.interactingObject = null;
-            //OnTriggerReleased(CurrentController);
             OnSnatched();
         }
-        collidingContainer = null;
+        if (collidingContainer != null)//pokud je pobliz nejakoho policka, zrus highlightovani toho policka
+        {
+            collidingContainer.GetComponent<TileContainer>().CancelHighlight();
+            collidingContainer = null;
+        }
+        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
     }
 
     IEnumerator PuzzleTileFadeOut(bool destroy)
@@ -149,7 +151,7 @@ public class PuzzleTile : GragableObject {
             GameObject closest = null;
             foreach (TileContainer container in listOfContainers)
             {
-                if (container.gameObject.GetComponent<TileContainer>().isEmpty)//musi mit TileContainer, jinak to spadne.....}ale on ho ma, to zarucuje ten manager)
+                if (container.isEmpty)
                 {
                     float dist = Vector3.Distance(container.gameObject.transform.position, this.transform.position);
                     if (dist < minDist)
@@ -157,19 +159,19 @@ public class PuzzleTile : GragableObject {
                         minDist = dist;
                         closest = container.gameObject;
                     }
-                    //minule nejblizsi policko deaktivuje
-                    if (collidingContainer != null)
-                    {
-                        collidingContainer.GetComponent<TileContainer>().CancelHighlight();
-                        collidingContainer = null;
-                    }
-                    //nove nejblizsi policko aktivuje
-                    if (closest != null)
-                    {
-                        collidingContainer = closest;
-                        collidingContainer.GetComponent<TileContainer>().Highlight();
-                    }
                 }
+            }
+            //minule nejblizsi policko deaktivuje
+            if (collidingContainer != null)
+            {
+                collidingContainer.GetComponent<TileContainer>().CancelHighlight();
+                collidingContainer = null;
+            }
+            //nove nejblizsi policko aktivuje
+            collidingContainer = closest;
+            if (closest != null)
+            {
+                collidingContainer.GetComponent<TileContainer>().Highlight();
             }
         }
     }
@@ -235,6 +237,7 @@ public class PuzzleTile : GragableObject {
         base.OnDestroy();
         if (placedAt != null)//pokud je umisteny v mrizce, je treba rict, ze po destroyi uz policko obsazene neni
         {
+            placedAt.isEmpty = true;
             ClearInfoAboutPlacing();
         }
     }

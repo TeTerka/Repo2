@@ -6,6 +6,9 @@ using System.Collections.Generic;
 /*
 	File browser for selecting files or folders at runtime.
  */
+//from http://wiki.unity3d.com/index.php?title=ImprovedFileBrowser
+//with some fixes + my improvement (possibility to change drives, and possibility to choose multiple patterns (in my case .jpg and .png))
+//my improvements marked with a comment "my stuff"
 
 public enum FileBrowserType
 {

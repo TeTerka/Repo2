@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Xml;
 using System.Xml.Serialization;
-using UnityEngine.UI;
 using System.IO;
 
+//nosic dat a funkci sdilenych mezi vsemi strankami menu
 
-public class MenuLogic: MonoBehaviour {//nosic dat a procedur sdilenych mezi vsemi strankami menu
+public class MenuLogic: MonoBehaviour {
    public GameObject expMenuCanvas;
    public GameObject confMenuCanvas;
    public GameObject mainMenuCanvas;
@@ -36,12 +35,13 @@ public class MenuLogic: MonoBehaviour {//nosic dat a procedur sdilenych mezi vse
             var ser = new XmlSerializer(typeof(ListOfExperiments));
             using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Open))
             {
+                availableExperiments = new ListOfExperiments();
                 availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
             }
         }
     }
 
-    private void OnApplicationQuit()
+    private void OnApplicationQuit()//pri vypnuti se provede ulozeni seznamu sablon experimentu
     {
         var ser = new XmlSerializer(typeof(ListOfExperiments));
         var stream = new System.IO.FileStream(Application.dataPath+"/eee.xml", System.IO.FileMode.Create);

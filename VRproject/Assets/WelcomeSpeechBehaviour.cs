@@ -1,7 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+//allows talking during an animation state
+//(just put this script on the state and fill the list of sentebces)
 
 public class WelcomeSpeechBehaviour : StateMachineBehaviour {
 
@@ -10,7 +12,14 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
     private float time = 0;
     private int i = 0;
     private string npcName;
-    private List<string> sentences;
+    private AudioSource mouth;
+
+    public bool replaceName;//ehm, to pak bude jinak
+    public int timeForASentence;
+    public List<string> sentences = new List<string>();
+    public bool useSound;
+    public List<AudioClip> audioClips = new List<AudioClip>();
+    //pozn.: oba listy musi mit stejnou delku!!
 
     NewManager mngr;
 
@@ -19,33 +28,50 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
         mngr = GameObject.Find("NewManager").GetComponent<NewManager>();
         subtitlesCanvas = mngr.subtitlesCanvas;
         subtitleText = subtitlesCanvas.GetComponentInChildren<Text>();
-        npcName = mngr.npcName;//ehm, touhle dobou je to jeste null...
-        sentences = new List<string>{
-        "Dobrý den, vítám vás na dnešním experimentu.",
-        "Mé jméno je "+ npcName +" a budu vás provázet jednotlivými částmi.",
-        "Na pultu před sebou máte sadu krychlí. ",
-        "Vašim úkolem je sestavit z nich fotografii, ",
-        "jejíž finální podobu můžete vidět na obrazovce za mnou.",
-        "Po úspěšném složení se obrazovka vždy změní a zobrazí další fotografii ke složení."
-        };
-}
+        if (useSound)
+        {
+            mouth = mngr.theNpc.GetComponent<AudioSource>();
+            if(mouth==null)
+            {
+                useSound = false;
+                Debug.Log("error, no AudioSpoource found on the NPC");
+            }
+        }
+        //npcName = mngr.npcName;//ehm, touhle dobou je to jeste null...
+    }
 
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        //book the subtitles canvas
         mngr.whoWantsSubtitles = stateInfo.shortNameHash;
-        npcName = mngr.npcName;
-        sentences[1] = "Mé jméno je " + npcName + " a budu vás provázet jednotlivými částmi.";
         subtitlesCanvas.SetActive(true);
+        //adjust the message
+        if (replaceName)
+        {
+            npcName = mngr.npcName;
+            sentences[1] = "Mé jméno je " + npcName + " a budu vás provázet jednotlivými částmi.";
+        }
+        //start the countdown
         subtitleText.text = sentences[0];
+        if (useSound)
+        {
+            mouth.clip = audioClips[0];
+            mouth.Play();
+        }
         time = 0;
         i = 1;
     }
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo animatorStateInfo, int layerIndex)
     {
-        //ale co kdyz bude prerusen???? tedy co kdyz se prepne state "v pulce vety"?
+        //update the countdown, display apropriate sentence
         time += Time.deltaTime;
-        if(i<sentences.Count && time>=5f)
+        if(i<sentences.Count && time>=timeForASentence)
         {
+            if(useSound)
+            {
+                mouth.clip = audioClips[i];
+                mouth.Play();
+            }
             subtitleText.text = sentences[i];
             i++;
             time = 0;

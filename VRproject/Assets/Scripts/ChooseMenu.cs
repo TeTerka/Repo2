@@ -1,7 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+//ovladani pro ChooseExpCanvas
 
 public class ChooseMenu : MonoBehaviour {
 
@@ -35,6 +36,14 @@ public class ChooseMenu : MonoBehaviour {
         AddAllNewExpToAvailable();
     }
 
+    public void AddAllNewExpToAvailable()
+    {
+        for (int i = expButtons.Count; i < MenuLogic.instance.availableExperiments.experiments.Count; i++)
+        {
+            AddExpToAvailables(MenuLogic.instance.availableExperiments.experiments[i]);
+        }
+    }
+
     private void AddExpToAvailables(Experiment e)
     {
         Button b = Instantiate(expNameButtonPrefab, availableExpsScrollViewContent.transform);
@@ -42,14 +51,6 @@ public class ChooseMenu : MonoBehaviour {
         b.GetComponent<RightClick>().leftClick.AddListener(delegate { OnAvailableExpClick(b,e); });
         b.GetComponent<RightClick>().rightClick.AddListener(delegate { OnRightClick(b, e); });
         expButtons.Add(b);
-    }
-
-    public void AddAllNewExpToAvailable()
-    {
-        for (int i = expButtons.Count; i < MenuLogic.instance.availableExperiments.experiments.Count; i++)
-        {
-            AddExpToAvailables(MenuLogic.instance.availableExperiments.experiments[i]);
-        }
     }
 
     public void OnAvailableExpClick(Button b, Experiment e)//choose this experiment and show info about it (left click)
@@ -119,7 +120,7 @@ public class ChooseMenu : MonoBehaviour {
                 }
                 //**************************************************************************************
             }
-            if(!System.IO.File.Exists(e.resultsFile))
+            if(!System.IO.File.Exists(e.resultsFile))//jeste muze byt problem, ze prestane existovat slozka s vysledky, tak je to taky treba osetrit:
             {
                 loadSuccessful = false;
                 missingStuff += e.resultsFile + "\n";
@@ -163,9 +164,19 @@ public class ChooseMenu : MonoBehaviour {
 
     public void OnTestClicked()
     {
+        StartChosenExperinemt(true);
+    }
+
+    public void OnRunClicked()
+    {
+        StartChosenExperinemt(false);
+    }
+
+    private void StartChosenExperinemt(bool testOnly)//true = only test run of the experiment (no data will be saved etc.)
+    {
         if (chosenExperiment != null && loadSuccessful)
         {
-            NewManager.instance.StartExperiment(chosenExperiment, true);//true = only test run of the experiment (no data will be saved etc.)
+            NewManager.instance.StartExperiment(chosenExperiment, testOnly);
             MenuLogic.instance.chooseMenuCanvas.SetActive(false);
             MenuLogic.instance.spectatorCanvas.SetActive(true);
         }
@@ -179,28 +190,6 @@ public class ChooseMenu : MonoBehaviour {
             {
                 otherErrorText.gameObject.SetActive(true);
                 otherErrorText.GetComponentInChildren<Text>().text = "missing filee(s) at:\n" + missingStuff;
-            }
-        }
-    }
-
-    public void OnRunClicked()
-    {
-        if (chosenExperiment != null && loadSuccessful)
-        {
-            NewManager.instance.StartExperiment(chosenExperiment,false);//false = real experiment
-            MenuLogic.instance.chooseMenuCanvas.SetActive(false);
-            MenuLogic.instance.spectatorCanvas.SetActive(true);
-        }
-        else
-        {
-            if (chosenExperiment == null)
-            {
-                errorText.SetActive(true);
-            }
-            if (!loadSuccessful)
-            {
-                otherErrorText.gameObject.SetActive(true);
-                otherErrorText.GetComponentInChildren<Text>().text = "missing image(s) at:\n"+missingStuff;
             }
         }
     }

@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Xml;
 using System.Xml.Serialization;
 using UnityEngine.UI;
 using System.IO;
-using UnityEngine.EventSystems;
+
+//ovladani pro CreateExperimentCanvas
+
 public class ExpMenu : MonoBehaviour {
 
     [Header("UI refernces")]
@@ -108,6 +109,7 @@ public class ExpMenu : MonoBehaviour {
 
     public void OnRightClick(Button b, Configuration c)//pravym kliknutim se configurace zcela vymaze (ze senamu available konfiguraci)
         //a co jiz vytvorene experimenty, ktere tyto konfigurace pouzivaji? maji se smazat?nebo ne? vadi to?.......
+        //je vubec tahle moznost mazani potreba?
     {
         popupPanel.SetActive(true);
         yesButton.onClick.RemoveAllListeners();
@@ -137,6 +139,7 @@ public class ExpMenu : MonoBehaviour {
     }
 
 
+    //obsluhy tech tri tlacitek na CreateExperimentCanvas:
     public void OnCreateNewConfigClicked()
     {
         MenuLogic.instance.confMenuCanvas.SetActive(true);
@@ -146,7 +149,8 @@ public class ExpMenu : MonoBehaviour {
     public void OnCancelInExpMenuClicked()
     {
         //clear stuff...
-        //...
+        //...maybe
+
         //switch menus
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
@@ -155,7 +159,7 @@ public class ExpMenu : MonoBehaviour {
 
     public void OnSaveExperimentClick()
     {
-        //create only if everything is correctly filled out
+        //create only if everything is correctly filled out (corretly = has a name and consists of at leat one configuration)
         bool ok = true;
         if (expName.text == null || MenuLogic.instance.ContainsWhitespaceOnly(expName.text))
         {
@@ -194,9 +198,14 @@ public class ExpMenu : MonoBehaviour {
         }
         Directory.CreateDirectory(Application.dataPath +"/"+ e.name + j);
         //create file for results
-        File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
+        var f = File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
+        f.Close();
         e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
-        //creta file with experiment info
+        //add a header to the file
+        StreamWriter sw = new StreamWriter(e.resultsFile, true);//true for append
+        sw.WriteLine("id,config name,time spent,score");
+        sw.Close();
+        //create file with experiment info
         var ser = new XmlSerializer(typeof(ListOfConfigurations));
         var stream = new System.IO.FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", System.IO.FileMode.Create);
         ListOfConfigurations loc = new ListOfConfigurations();
@@ -206,12 +215,6 @@ public class ExpMenu : MonoBehaviour {
 
         //add it to the list
         MenuLogic.instance.availableExperiments.experiments.Add(e);
-        /////////////////////////////////////////tohle asi nebude pri kazdem save ne?.....co treba OnAppQuit nebo tak neco...
-        /////////////////////////////////////////serialize it (all?)
-        ///////////////////////////////////////var ser = new XmlSerializer(typeof(ListOfExperiments));
-        ///////////////////////////////////////var stream = new System.IO.FileStream(Application.dataPath+"/eee.xml", System.IO.FileMode.Create);
-        ///////////////////////////////////////ser.Serialize(stream, availableExperiments);
-        ///////////////////////////////////////stream.Close();
 
         //switch back to mainMenu
         MenuLogic.instance.mainMenuCanvas.SetActive(true);

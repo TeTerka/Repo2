@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 //oblast kam hrac dosahne (aby se veci mohly respawnovat, kdyz se dostanou mimo dosah hrace)
 

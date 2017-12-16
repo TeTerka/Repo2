@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Xml;
-using System.Xml.Serialization;
 using UnityEngine.UI;
-using System.IO;
+
+//ovladani pro CreateConfigCanvas
 
 public class CofigMenu : MonoBehaviour {
 
@@ -32,18 +31,16 @@ public class CofigMenu : MonoBehaviour {
     public GameObject scrollViewContent;
     public GameObject blockingPanel;
     public GameObject errorText;
-    //new stuff
     public InputField timeLimitField;
     public Dropdown modelDropdown;
     public Dropdown behaviourDropdown;
-    //
 
     public ExpMenu em;
 
     //seznamy...
     private List<string> texturePaths = new List<string>();
     private List<GameObject> puzzlePanels = new List<GameObject>();
-    int activeButton = 0;
+    private int activeButton = 0;
 
     private void Start()
     {
@@ -129,7 +126,7 @@ public class CofigMenu : MonoBehaviour {
         }
     }
 
-    public void OnSelectPuzzleImageClick(int i)//kliknuti na button na panelu (=nastavovani png)
+    public void OnSelectPuzzleImageClick(int i)//kliknuti na button na panelu (=vyber png/jpg z disku)
     {
         blockingPanel.SetActive(true);
         activeButton = i;
@@ -152,9 +149,8 @@ public class CofigMenu : MonoBehaviour {
         if (path != null)
         {
             puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(path);
-            //jenom to naznaci ze je tu problem (zobrazi missingImage), ale konfiguraci to dovoli vyrobit => musi se pozdeji znovu provest kontrola...
             if (puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite == null)//neboli if picture loadig failed
-            {
+            {   //jenom to naznaci ze je tu problem (zobrazi missingImage), ale konfiguraci to dovoli vyrobit => musi se pozdeji znovu provest kontrola...
                 puzzlePanels[activeButton].GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.missingImage;
             }
         }
@@ -184,7 +180,6 @@ public class CofigMenu : MonoBehaviour {
         {
             configNameField.image.color = Color.white;
         }
-        //new stuff
         int time=42;
         if (timeLimitField.text == null || !int.TryParse(timeLimitField.text,out time))
         {
@@ -195,27 +190,28 @@ public class CofigMenu : MonoBehaviour {
         {
             timeLimitField.image.color = Color.white;
         }
-        //
         for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
         {
             GameObject q = puzzlePanels[i];
-            if (q.GetComponentInChildren<InputField>().text == null || MenuLogic.instance.ContainsWhitespaceOnly(q.GetComponentInChildren<InputField>().text))
+            InputField puzzleNameField = q.GetComponentInChildren<InputField>();
+            if (puzzleNameField.text == null || MenuLogic.instance.ContainsWhitespaceOnly(puzzleNameField.text))
             {
                 ok = false;
-                q.GetComponentInChildren<InputField>().image.color = Color.red;
+                puzzleNameField.image.color = Color.red;
             }
             else
             {
-                q.GetComponentInChildren<InputField>().image.color = Color.white;
+                puzzleNameField.image.color = Color.white;
             }
+            Button selectImageButton = q.GetComponentInChildren<Button>();
             if (texturePaths[i] == null)
             {
                 ok = false;
-                q.GetComponentInChildren<Button>().image.color = Color.red;
+                selectImageButton.image.color = Color.red;
             }
             else
             {
-                q.GetComponentInChildren<Button>().image.color = Color.white;
+                selectImageButton.image.color = Color.white;
             }
         }
         if (!ok)
@@ -253,12 +249,6 @@ public class CofigMenu : MonoBehaviour {
 
         //add it to the list
         MenuLogic.instance.availableConfigs.configs.Add(c);
-        ////////////////////////tohle asi nebude pri kazdem save ne?.....co treba OnAppQuit nebo tak neco...
-        ////////////////////////serialize it (all?)
-        //////////////////////var ser = new XmlSerializer(typeof(ListOfConfigurations));
-        //////////////////////var stream = new System.IO.FileStream(Application.dataPath+"/fff.xml", System.IO.FileMode.Create);
-        //////////////////////ser.Serialize(stream, availableConfigs);
-        //////////////////////stream.Close();
 
         //switch back to expMenu
         MenuLogic.instance.expMenuCanvas.SetActive(true);
@@ -267,18 +257,19 @@ public class CofigMenu : MonoBehaviour {
     }
     public void OnCancelInConfigMenuClicked()
     {
-        //cancel highlights
-        configNameField.image.color = Color.white;
-        for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
-        {
-            GameObject q = puzzlePanels[i];
-            if (q.GetComponentInChildren<InputField>().text == null || MenuLogic.instance.ContainsWhitespaceOnly(q.GetComponentInChildren<InputField>().text))
-            {
-                q.GetComponentInChildren<InputField>().image.color = Color.white;
-                q.GetComponentInChildren<Button>().image.color = Color.white;
-            }
-        }
-        errorText.SetActive(false);
+       ////cancel highlights
+       //configNameField.image.color = Color.white;
+       //for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
+       //{
+       //    GameObject q = puzzlePanels[i];
+       //    InputField puzzleNameField = q.GetComponentInChildren<InputField>();
+       //    if (puzzleNameField.text == null || MenuLogic.instance.ContainsWhitespaceOnly(puzzleNameField.text))
+       //    {
+       //        puzzleNameField.image.color = Color.white;
+       //        q.GetComponentInChildren<Button>().image.color = Color.white;
+       //    }
+       //}
+       //errorText.SetActive(false);
 
         //switch to expMenu
         MenuLogic.instance.expMenuCanvas.SetActive(true);

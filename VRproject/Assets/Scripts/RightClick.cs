@@ -2,7 +2,9 @@
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
 
-public class RightClick : MonoBehaviour, IPointerClickHandler //umoznuje rozlisit leve a prave kliknuti na button
+//umoznuje rozlisit leve a prave kliknuti na button
+
+public class RightClick : MonoBehaviour, IPointerClickHandler 
 {
     public UnityEvent leftClick;
     public UnityEvent rightClick;

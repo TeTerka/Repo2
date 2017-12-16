@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+
+//ovladani pro MainMenuCanvas
 
 public class MainMenu : MonoBehaviour {
 
@@ -11,7 +11,6 @@ public class MainMenu : MonoBehaviour {
         MenuLogic.instance.chooseMenuCanvas.SetActive(true);
         MenuLogic.instance.mainMenuCanvas.SetActive(false);
 
-        //cm.RefreshExpsList();
         cm.AddAllNewExpToAvailable();
     }
 

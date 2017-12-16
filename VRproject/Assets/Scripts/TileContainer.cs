@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 //kontajner neboli jedno policko mrizky
 //umi se highlightovat, vi jestli je obsazene, vi ktera krychle na nej patri,...
@@ -8,7 +6,15 @@ using UnityEngine;
 public class TileContainer : MonoBehaviour {
 
     //charakteristika
-    private int containerIndex;
+    private int containerIndex;    //cislovani krychli/mrizky je od leveho dolniho rohu, napr. takto(pro rozlozeni 3x5):
+    // ---------------------
+    // |10 |11 |12 |13 |14 |
+    // ---------------------
+    // | 5 | 6 | 7 | 8 | 9 |
+    // ---------------------
+    // | 0 | 1 | 2 | 3 | 4 |
+    // ---------------------
+
     //reference
     private Transform grid;//mrizka - vzhledem k ni se urcuji smery pri snapovani, referenci ziska od Manageru
     //stav
@@ -19,6 +25,16 @@ public class TileContainer : MonoBehaviour {
     private Color basicColor = Color.white;
     private Color highlightColor = Color.red;
     private Renderer myRndr;
+
+    private void Start()
+    {
+        grid = NewManager.instance.containersHolder.transform;
+        if((myRndr=GetComponent<Renderer>())==null)
+        {
+            myRndr=gameObject.AddComponent<Renderer>();
+        }
+        Matches = false;
+    }
 
     public void Initialize(int index)//tahle funkce se vola pri vytvareni kontajneru (aby se nepsalo primo containerIndex = k;)
     {
@@ -34,18 +50,14 @@ public class TileContainer : MonoBehaviour {
         myRndr.material.color = basicColor;
     }
 
-    private void Start()
-    {
-        grid = NewManager.instance.containersHolder.transform;
-        myRndr = GetComponent<Renderer>();//prafab ho musi mit!
-        Matches = false;
-    }
-
     public void SetMatches(Transform tile, int tileIndex)//container zjisti, jestli na nej pasuje takto natoceni dilek (info o dilku predavano v parametrech)
     {
         int n = NewManager.instance.modelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
         Matches = (CheckIndex(tileIndex) && CheckFace(tile, n) && CheckFaceRotation(tile, n));//zjisti jestli tedy dilek pasuje
     }
+
+
+
 
     private bool CheckIndex(int tileIndex)//spravna pozice?
     {
@@ -80,6 +92,7 @@ public class TileContainer : MonoBehaviour {
     {
         switch (n)//podle toho, ktera strana ma byt nahore (cisla jsou podle textury)
         {
+            //udaje jsou vypozorovany z toho, jak se mapuje textura na moji krychli...
             case 0: return grid.forward == cube.forward;
             case 1: return grid.forward == -cube.up;
             case 2: return grid.forward == cube.up;

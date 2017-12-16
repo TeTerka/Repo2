@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 //objekt s timto skriptem muze byt sebran, upusten a zahozen
 //(musi mit take rigidbody a tag GrabableObject)
@@ -21,8 +19,11 @@ public class GragableObject:MonoBehaviour{
         {
             gameObject.tag = "GrabableObject";
         }
-
-        rb = GetComponent<Rigidbody>();//prafab ho musi mit!
+        //kdyby se rigidbody zapomnelo priradit v inspektoru...
+        if ((rb=GetComponent<Rigidbody>())==null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+        }
         fj = null;
     }
 
@@ -101,9 +102,7 @@ public class GragableObject:MonoBehaviour{
     {
         if (!IsFree())
         {
-            //OnTriggerReleased(currentController);
             CurrentController.StopHoldingIt();
-            //currentController = null;
         }
     }
 }

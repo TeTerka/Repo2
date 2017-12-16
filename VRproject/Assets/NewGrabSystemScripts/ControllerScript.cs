@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 //skript na controllery - ziskavani inputu
 
@@ -23,6 +21,8 @@ public class ControllerScript : MonoBehaviour {
     //pamatovane objekty
     private GragableObject interactingObject;//objekt ktery je ovladacem drzen
     public void StopHoldingIt()//kvuli respawnu je traba obcas neco hraci "vytrhnout z ruky", proto ostatni tridy mohou nastavit interactingObject = null
+                               //just like ReleaseObject but without  interactingObject.OnTriggerReleased(this,true);
+                               //is that ok?
     {
         interactingObject = null;
     }
