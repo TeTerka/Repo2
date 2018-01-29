@@ -108,17 +108,24 @@ public class ChooseMenu : MonoBehaviour {
                 q.GetComponentInChildren<Text>().text = c.puzzles[j].widthpx + " x " + c.puzzles[j].heigthpx;
                 List<Image> images = new List<Image>();
                 q.GetComponentsInChildren<Image>(images);
-                images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
-                //**************************************************************************************
-                //pozn.: predpokladam ze obsah xml nebude nikdo menit, jedine co se tedy muze pokazit je, ze ulozena cesta prestane vest k obrazku
-                //je tedy potreba to zkontrolovat:
-                if(images[1].sprite==null)//neboli if picture loadig failed
+                if (e.puzzleType == "PipePuzzle")
                 {
-                    loadSuccessful = false;
-                    images[1].sprite = MenuLogic.instance.missingImage;
-                    missingStuff += c.puzzles[j].pathToImage+"\n";
+                    images[1].sprite = MenuLogic.instance.pipeImage;
                 }
-                //**************************************************************************************
+                if (e.puzzleType == "CubePuzzle")
+                {
+                    images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
+                    //**************************************************************************************
+                    //pozn.: predpokladam ze obsah xml nebude nikdo menit, jedine co se tedy muze pokazit je, ze ulozena cesta prestane vest k obrazku
+                    //je tedy potreba to zkontrolovat:
+                    if (images[1].sprite == null)//neboli if picture loadig failed
+                    {
+                        loadSuccessful = false;
+                        images[1].sprite = MenuLogic.instance.missingImage;
+                        missingStuff += c.puzzles[j].pathToImage + "\n";
+                    }
+                    //**************************************************************************************
+                }
             }
             if(!System.IO.File.Exists(e.resultsFile))//jeste muze byt problem, ze prestane existovat slozka s vysledky, tak je to taky treba osetrit:
             {

@@ -9,6 +9,7 @@ public class PuzzleTile : GragableObject {
 
     //reference
     private Transform grid;//mrizka - vzhledem k ni se urcuji smery pri snapovani, referenci ziska od Manageru
+    private CubePuzzle cp;
     //stav
     private TileContainer placedAt = null;
     private GameObject collidingContainer = null;
@@ -23,8 +24,9 @@ public class PuzzleTile : GragableObject {
     {
         base.Awake();
 
-        grid = NewManager.instance.containersHolder.transform;
-        listOfContainers = NewManager.instance.containerList;
+        cp = (CubePuzzle)NewManager.instance.cubePuzzle;
+        grid = cp.containersHolder.transform;
+        listOfContainers = cp.ContainerList;
 
         animator = GetComponent<Animator>();//prefab ho musi mit!
     }
@@ -55,15 +57,15 @@ public class PuzzleTile : GragableObject {
             collidingContainer.GetComponent<TileContainer>().CancelHighlight();
             collidingContainer = null;
 
-            //ManagerScript.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
-            NewManager.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
+            //NewManager.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
+            cp.OnCubePlaced(placedAt.Matches);
         }
-        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dolo OnPressed...)
+        physicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dolo OnPressed...)
     }
     public override void OnTriggerPressed(ControllerScript controller)
     {
         base.OnTriggerPressed(controller);
-        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
+        physicsCollider.size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
         if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne
         {
             ClearInfoAboutPlacing();
@@ -75,7 +77,7 @@ public class PuzzleTile : GragableObject {
     {
         tileIndex = index;
         spawnedAt = spawnPoint;
-        listOfContainers = NewManager.instance.containerList;
+        listOfContainers = cp.ContainerList;
     }
 
     public void RespawnYourself()//respawnuje sam sebe na misto, kde byl a zacatku vytvoren
@@ -99,7 +101,11 @@ public class PuzzleTile : GragableObject {
     private void ClearInfoAboutPlacing()
     {
         placedAt.isEmpty = true;
-        NewManager.instance.OnCubeRemoved(placedAt.Matches);
+
+        //NewManager.instance.OnCubeRemoved(placedAt.Matches);
+        CubePuzzle cp = (CubePuzzle)NewManager.instance.CurrentPuzzle;
+        cp.OnCubeRemoved(placedAt.Matches);
+
         placedAt.Matches = false;
         placedAt = null;
         collidingContainer = null;
@@ -121,7 +127,7 @@ public class PuzzleTile : GragableObject {
             collidingContainer.GetComponent<TileContainer>().CancelHighlight();
             collidingContainer = null;
         }
-        gameObject.GetComponent<BoxCollider>().size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
+        physicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
     }
 
     IEnumerator PuzzleTileFadeOut(bool destroy)
@@ -147,7 +153,7 @@ public class PuzzleTile : GragableObject {
         if (!IsFree())//je to kvuli umistovani dilku a ty se daji umistit jedine rukou, takze me to zajima jedine kdyz je krychle drzena
         {
             //spocita ke ktremu policku to ma nejbliz (a ne dal nez na 2x hranu kostky)
-            float minDist = NewManager.instance.tileSize*2;
+            float minDist = cp.TileSize*2;
             GameObject closest = null;
             foreach (TileContainer container in listOfContainers)
             {
@@ -184,7 +190,7 @@ public class PuzzleTile : GragableObject {
     }
     private void SnapPosition()//posune krychli aby pasovala do mrizky
     {
-        float offset = NewManager.instance.tileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
+        float offset = cp.TileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
         Vector3 newPos = new Vector3(collidingContainer.transform.position.x, collidingContainer.transform.position.y + offset, collidingContainer.transform.position.z);
         transform.position = newPos;
     }

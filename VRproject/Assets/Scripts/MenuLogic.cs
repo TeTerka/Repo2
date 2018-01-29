@@ -16,6 +16,7 @@ public class MenuLogic: MonoBehaviour {
    public ListOfExperiments availableExperiments = new ListOfExperiments();
 
     public Sprite missingImage;
+    public Sprite pipeImage;
 
 
     //sigleton stuff
@@ -125,6 +126,7 @@ public class Configuration
     public int timeLimit;//time limit for each puzzle, in seconds
     public string modelName;
     public string behaviourName;
+    public string puzzleType;//**********************************************************************************
     //
     [XmlArray("Puzzles")]
     [XmlArrayItem("Puzzle")]
@@ -143,6 +145,7 @@ public class Experiment
 {
     public string name;
     public string resultsFile;
+    public string puzzleType;//**********************************************************************************
     [XmlArray("Confiurations")]
     [XmlArrayItem("Configuration")]
     public List<Configuration> configs = new List<Configuration>();

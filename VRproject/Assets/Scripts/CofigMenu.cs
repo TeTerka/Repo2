@@ -16,11 +16,13 @@ public class CofigMenu : MonoBehaviour {
     [Header("Adjusting puzzle size")]
     private float tableWidth;
     private float tableHeigth;
-    public float tileSize;
+    ////////////////////////////////////public float tileSize;//duplicate!!!!!!!!!!!!!!!!!!!!!
     public GameObject table;
 
-    private int maxWidth;
-    private int maxHeigth;
+    private int maxPipeWidth;
+    private int maxPipeHeigth;
+    private int maxCubeWidth;
+    private int maxCubeHeigth;
 
     [Header("References to UI elements")]
     public Toggle npcToggle;
@@ -42,33 +44,23 @@ public class CofigMenu : MonoBehaviour {
     private List<GameObject> puzzlePanels = new List<GameObject>();
     private int activeButton = 0;
 
+    public PipePuzzle pp;
+    public CubePuzzle cp;
+
     private void Start()
     {
         //zjisti kolik se na stul vejde max kostek na vysku/sirku
-        tileSize = NewManager.instance.tileSize;
         tableWidth = table.transform.lossyScale.x;
         tableHeigth = table.transform.lossyScale.z;
 
-        maxWidth = (int)((tableWidth / 3) / tileSize);
-        maxHeigth = (int)(tableHeigth / tileSize);
+        maxPipeWidth = (int)((tableWidth / 2) / pp.PipeSize);
+        maxPipeHeigth = (int)(tableHeigth / pp.PipeSize)+1;
+
+        maxCubeWidth = (int)((tableWidth / 3) / cp.TileSize);
+        maxCubeHeigth = (int)(tableHeigth / cp.TileSize);
 
         //podle toho nastavi dropdowny u nastavovani sirek/vysek obrazku
-        List<string> widths = new List<string>();
-        for (int i = 1; i <= maxWidth; i++)
-        {
-            widths.Add(i.ToString());
-        }
-        List<string> heigths = new List<string>();
-        for (int i = 1; i <= maxHeigth; i++)
-        {
-            heigths.Add(i.ToString());
-        }
-        List<Dropdown> droplist = new List<Dropdown>();
-        puzzlePanelPrefab.GetComponentsInChildren<Dropdown>(droplist);
-        droplist[0].ClearOptions();
-        droplist[0].AddOptions(widths);
-        droplist[1].ClearOptions();
-        droplist[1].AddOptions(heigths);
+        SetNumberOfPuzzlesDropdownContent(maxCubeWidth, maxCubeHeigth);
 
         //nastav dropdowny na modely npc a chovani npc
         List<string> models = new List<string>();
@@ -110,7 +102,10 @@ public class CofigMenu : MonoBehaviour {
                 int iForDelegate = i;
                 var p = Instantiate(puzzlePanelPrefab, scrollViewContent.transform);
                 puzzlePanels.Add(p);
-                p.GetComponentInChildren<Button>().onClick.AddListener(delegate { OnSelectPuzzleImageClick(iForDelegate); });
+                if (cubeToggle.isOn)/////////
+                    p.GetComponentInChildren<Button>().onClick.AddListener(delegate { OnSelectPuzzleImageClick(iForDelegate); });
+                else
+                    p.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.pipeImage;/////////
                 p.GetComponentInChildren<InputField>().onValueChanged.AddListener(delegate { OnInputTextEdited(p.GetComponentInChildren<InputField>()); });
                 texturePaths.Add(null);
             }
@@ -204,14 +199,21 @@ public class CofigMenu : MonoBehaviour {
                 puzzleNameField.image.color = Color.white;
             }
             Button selectImageButton = q.GetComponentInChildren<Button>();
-            if (texturePaths[i] == null)
+            if (cubeToggle.isOn)//////////////
             {
-                ok = false;
-                selectImageButton.image.color = Color.red;
+                if (texturePaths[i] == null)
+                {
+                    ok = false;
+                    selectImageButton.image.color = Color.red;
+                }
+                else
+                {
+                    selectImageButton.image.color = Color.white;
+                }
             }
             else
             {
-                selectImageButton.image.color = Color.white;
+                selectImageButton.image.color = Color.white;///////////////
             }
         }
         if (!ok)
@@ -226,6 +228,11 @@ public class CofigMenu : MonoBehaviour {
 
         //create configuration (class)
         Configuration c = new Configuration();
+        if (cubeToggle.isOn)
+            c.puzzleType = "CubePuzzle";
+        else
+            c.puzzleType = "PipePuzzle";
+
         c.name = configNameField.text;
         c.withNPC = npcToggle.isOn;
         c.withTutorial = tutorialToggle.isOn;
@@ -240,7 +247,8 @@ public class CofigMenu : MonoBehaviour {
             q.GetComponentsInChildren<Dropdown>(droplist);
             p.heigthpx = droplist[1].value + 1;
             p.widthpx = droplist[0].value + 1;
-            p.pathToImage = texturePaths[i];
+            if(cubeToggle.isOn)
+                p.pathToImage = texturePaths[i];
             c.puzzles.Add(p);
         }
 
@@ -254,6 +262,8 @@ public class CofigMenu : MonoBehaviour {
         MenuLogic.instance.expMenuCanvas.SetActive(true);
         MenuLogic.instance.confMenuCanvas.SetActive(false);
         em.AddOneNewConfig(c);
+
+        CleanUp();
     }
     public void OnCancelInConfigMenuClicked()
     {
@@ -274,6 +284,9 @@ public class CofigMenu : MonoBehaviour {
         //switch to expMenu
         MenuLogic.instance.expMenuCanvas.SetActive(true);
         MenuLogic.instance.confMenuCanvas.SetActive(false);
+
+        CleanUp();
+
     }
 
     private bool IsValid(string s)//tedy neobsahuje carku (protoze se to pak bude ukladat do .csv )
@@ -287,4 +300,72 @@ public class CofigMenu : MonoBehaviour {
         }
         return true;
     }
+
+    private void CleanUp()
+    {
+        pipeToggle.isOn = false;
+        cubeToggle.isOn = true;
+        for (int i = puzzlePanels.Count - 1; i >= 0; i--)
+        {
+            Destroy(puzzlePanels[i]);
+            puzzlePanels.RemoveAt(i);
+            texturePaths.RemoveAt(i);
+        }
+        numberOfPuzlesDropwdown.value = 0;
+        OnNumberDropdownChanged();
+    }
+
+    public Toggle cubeToggle;
+    public Toggle pipeToggle;
+    public void OnTypeToggleChange()
+    {
+        //use different maxWidth
+        if(cubeToggle.isOn)
+            SetNumberOfPuzzlesDropdownContent(maxCubeWidth, maxCubeHeigth);
+        if(pipeToggle.isOn)
+            SetNumberOfPuzzlesDropdownContent(maxPipeWidth, maxPipeHeigth);
+
+        //smaz stare
+        for (int i = puzzlePanels.Count - 1; i >= 0; i--)
+        {
+            Destroy(puzzlePanels[i]);
+            puzzlePanels.RemoveAt(i);
+            texturePaths.RemoveAt(i);
+        }
+        //insanciuj nove
+        for (int i = 0; i < numberOfPuzlesDropwdown.value + 1; i++)
+        {
+            int iForDelegate = i;
+            var p = Instantiate(puzzlePanelPrefab, scrollViewContent.transform);
+            puzzlePanels.Add(p);
+            if (cubeToggle.isOn)/////////
+                p.GetComponentInChildren<Button>().onClick.AddListener(delegate { OnSelectPuzzleImageClick(iForDelegate); });
+            else
+                p.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.pipeImage;/////////
+            p.GetComponentInChildren<InputField>().onValueChanged.AddListener(delegate { OnInputTextEdited(p.GetComponentInChildren<InputField>()); });
+            texturePaths.Add(null);
+        }
+    }
+
+    private void SetNumberOfPuzzlesDropdownContent(int maxWidth, int maxHeigth)
+    {
+        //podle toho nastavi dropdowny u nastavovani sirek/vysek obrazku
+        List<string> widths = new List<string>();
+        for (int i = 1; i <= maxWidth; i++)
+        {
+            widths.Add(i.ToString());
+        }
+        List<string> heigths = new List<string>();
+        for (int i = 1; i <= maxHeigth; i++)
+        {
+            heigths.Add(i.ToString());
+        }
+        List<Dropdown> droplist = new List<Dropdown>();
+        puzzlePanelPrefab.GetComponentsInChildren<Dropdown>(droplist);
+        droplist[0].ClearOptions();
+        droplist[0].AddOptions(widths);
+        droplist[1].ClearOptions();
+        droplist[1].AddOptions(heigths);
+    }
+
 }

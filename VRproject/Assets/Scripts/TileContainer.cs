@@ -17,6 +17,7 @@ public class TileContainer : MonoBehaviour {
 
     //reference
     private Transform grid;//mrizka - vzhledem k ni se urcuji smery pri snapovani, referenci ziska od Manageru
+    private CubePuzzle cp;
     //stav
     public bool isEmpty = true;
     public bool Matches { get; set; }
@@ -28,7 +29,8 @@ public class TileContainer : MonoBehaviour {
 
     private void Start()
     {
-        grid = NewManager.instance.containersHolder.transform;
+        cp = (CubePuzzle)NewManager.instance.cubePuzzle;
+        grid = cp.containersHolder.transform;
         if((myRndr=GetComponent<Renderer>())==null)
         {
             myRndr=gameObject.AddComponent<Renderer>();
@@ -52,7 +54,7 @@ public class TileContainer : MonoBehaviour {
 
     public void SetMatches(Transform tile, int tileIndex)//container zjisti, jestli na nej pasuje takto natoceni dilek (info o dilku predavano v parametrech)
     {
-        int n = NewManager.instance.modelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
+        int n = cp.ModelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
         Matches = (CheckIndex(tileIndex) && CheckFace(tile, n) && CheckFaceRotation(tile, n));//zjisti jestli tedy dilek pasuje
     }
 

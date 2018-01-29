@@ -5,6 +5,7 @@
 public class MainMenu : MonoBehaviour {
 
     public ChooseMenu cm;
+    public ExpMenu em;
 
     public void OnChooseExperimentClicked()
     {
@@ -18,5 +19,13 @@ public class MainMenu : MonoBehaviour {
     {
         MenuLogic.instance.expMenuCanvas.SetActive(true);
         MenuLogic.instance.mainMenuCanvas.SetActive(false);
+        em.SetPuzzleType("CubePuzzle");
+    }
+
+    public void OnCreateNewPipeExperimentClicked()
+    {
+        MenuLogic.instance.expMenuCanvas.SetActive(true);
+        MenuLogic.instance.mainMenuCanvas.SetActive(false);
+        em.SetPuzzleType("PipePuzzle");
     }
 }

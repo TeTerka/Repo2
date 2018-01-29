@@ -30,6 +30,9 @@ public class ExpMenu : MonoBehaviour {
     //private List<Button> availableConfigInfoButtons = new List<Button>();
     private List<GameObject> puzzleInfoPanels = new List<GameObject>();
 
+    private string puzzleType;
+    public Text headline;
+
     private void Start()
     {
         ////if there is a config file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
@@ -77,10 +80,17 @@ public class ExpMenu : MonoBehaviour {
             q.GetComponentInChildren<Text>().text = c.puzzles[j].widthpx + " x " + c.puzzles[j].heigthpx;
             List<Image> images = new List<Image>();
             q.GetComponentsInChildren<Image>(images);
-            images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
-            if (images[1].sprite == null)//neboli if picture loadig failed
+            if (c.puzzleType=="PipePuzzle")
             {
-                images[1].sprite = MenuLogic.instance.missingImage;
+                images[1].sprite = MenuLogic.instance.pipeImage;
+            }
+            if (c.puzzleType == "CubePuzzle")
+            {
+                images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
+                if (images[1].sprite == null)//neboli if picture loadig failed
+                {
+                    images[1].sprite = MenuLogic.instance.missingImage;
+                }
             }
         }
 
@@ -94,6 +104,9 @@ public class ExpMenu : MonoBehaviour {
 
     public void OnAvailableConfigClick(Button availableButton,Configuration c)//selects this button/config for experiment (and put it to chosenConfigsList)
     {
+        if (c.puzzleType != this.puzzleType)//******************************************************************
+            return;
+
         Button chosenButton = Instantiate(availableButton, chosenConfigScrollViewContent.transform);
         chosenConfigInfoButtons.Add(chosenButton);
         chosenConfigs.Add(c);
@@ -154,6 +167,7 @@ public class ExpMenu : MonoBehaviour {
         //switch menus
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
+        ClearThisMenuPage();
 
     }
 
@@ -186,6 +200,7 @@ public class ExpMenu : MonoBehaviour {
         //create experiment (class)
         Experiment e = new Experiment();
         e.name = expName.text;
+        e.puzzleType = puzzleType;//*********************************************************************************************************************
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
@@ -219,7 +234,30 @@ public class ExpMenu : MonoBehaviour {
         //switch back to mainMenu
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
+        ClearThisMenuPage();
     }
+
+    public void SetPuzzleType(string type)
+    {
+        puzzleType = type;
+        headline.text = "Create new "+type+" experiment";
+    }
+
+    private void ClearThisMenuPage()//clear only selected configs, not (yet) the available configs...
+    {
+        expName.text = "";
+        expName.image.color = Color.white;
+        errorText.gameObject.SetActive(false);
+
+        for (int i=chosenConfigInfoButtons.Count-1;i>=0;i--)
+        {
+            Destroy(chosenConfigInfoButtons[i].gameObject);
+        }
+        chosenConfigs.Clear();
+        chosenConfigInfoButtons.Clear();
+    }
+
+
 }
 
 

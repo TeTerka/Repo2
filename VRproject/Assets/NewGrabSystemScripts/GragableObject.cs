@@ -12,6 +12,9 @@ public class GragableObject:MonoBehaviour{
     Rigidbody rb;
     FixedJoint fj;
 
+    public BoxCollider physicsCollider { get; private set; }
+    public BoxCollider grabCollider { get; private set; }
+
     public virtual void Awake()//or start?
     {
         //kdyby se tag zapomnel priradit v inspektoru...
@@ -25,6 +28,16 @@ public class GragableObject:MonoBehaviour{
             rb = gameObject.AddComponent<Rigidbody>();
         }
         fj = null;
+
+        //najde na prefabu jeden collider jako trigger pro sbirani a druhy jako normalni collider na fyziku...
+        var c = GetComponents<BoxCollider>();
+        foreach (BoxCollider collider in c)
+        {
+            if (collider.isTrigger)
+                grabCollider = collider;
+            else
+                physicsCollider = collider;
+        }
     }
 
     public virtual void OnTriggerPressed(ControllerScript controller)

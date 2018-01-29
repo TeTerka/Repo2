@@ -92,10 +92,16 @@ public class ControllerScript : MonoBehaviour {
 
         foreach (Collider obj in touchedObjects)
         {
-            if (obj.CompareTag("GrabableObject") )
+            if (obj.isTrigger && obj.CompareTag("GrabableObject") ) //pridano isTrigger, protoze ted ma moje krychle 2 ruzne collidery...
             {
                 interactingObject = obj.GetComponent<GragableObject>();
                 interactingObject.OnTriggerPressed(this);
+                return;
+            }
+
+            if(obj.CompareTag("PipeTile"))
+            {
+                obj.GetComponent<PipeTile>().OnTriggerPressed(this);
                 return;
             }
         }
