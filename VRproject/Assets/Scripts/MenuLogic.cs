@@ -111,10 +111,26 @@ public class MenuLogic: MonoBehaviour {
 //serializovane tridy.....
 public class Puzzle
 {
-    public string pathToImage;
+    public string pathToImage;//jen pro cube?
+    [XmlArray("spawnPointMix")]
+    [XmlArrayItem("int")]
+    public List<int> spawnPointMix;
+
+    [XmlArray("StateField")]
+    [XmlArrayItem("row")]
+    public List<Wrapper> chosenList;//jen pro pipe???
+
     public int widthpx;
     public int heigthpx;
     public string name;
+}
+
+[System.Serializable]
+public class Wrapper//protoze nejde serializovat List<List<...>>
+{
+    [XmlArray("states")]
+    [XmlArrayItem("state")]
+    public List<char> row;
 }
 
 public class Configuration

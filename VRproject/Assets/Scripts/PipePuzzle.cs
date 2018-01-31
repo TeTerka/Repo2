@@ -19,7 +19,6 @@ public class PipePuzzle : AbstractPuzzle
     private List<GameObject> helpPipes = new List<GameObject>();//koncove a pocatecni trubky (neboli ty co se neotaci)
 
     private List<List<PipeTile>> pipeList = new List<List<PipeTile>>();
-    private List<List<List<char>>> chosenList = new List<List<List<char>>>();//f = fresh, o = open (=chosen), c = closed.....pro DFS
     private bool pathFound = false;
 
     [Header("button on the table")]
@@ -119,8 +118,6 @@ public class PipePuzzle : AbstractPuzzle
 
     public override void FinishConfig()
     {
-        chosenList.Clear();//staci tohle jako smazani obsahu?
-
         //destroy the button
         if(button!=null)
             Destroy(button);
@@ -131,39 +128,6 @@ public class PipePuzzle : AbstractPuzzle
     {
         //instantiate the button
         button = Instantiate(buttonPrefab, buttonSpot);
-
-        //prepare each puzzle
-        for (int k = 0; k < c.puzzles.Count; k++)
-        {
-            //create empty dfs state field (full of "fresh" nodes), one 2D field for each puzzle = > List<List<List<char>>>
-            chosenList.Add(new List<List<char>>());
-            for (int i = 0; i < c.puzzles[k].heigthpx; i++)
-            {
-                chosenList[k].Add(new List<char>());
-                for (int j = 0; j < c.puzzles[k].widthpx; j++)
-                {
-                    chosenList[k][i].Add('f');
-                }
-            }
-            //vymysli mapu...bude ulozena prave v tom poli, chosen = "open" nodes
-            ChoosePath(k,c.puzzles[k].heigthpx, c.puzzles[k].widthpx);
-        }
-
-        //prepare tutorial - za posledni puzzle pridej jeste zaznam pro grid pro tutorial
-        if (c.withTutorial)
-        {
-            chosenList.Add(new List<List<char>>());
-            for (int i = 0; i < 2; i++)
-            {
-                chosenList[c.puzzles.Count].Add(new List<char>());
-                for (int j = 0; j < 2; j++)
-                {
-                    chosenList[c.puzzles.Count][i].Add('f');
-                }
-            }
-            //vymysli mapu...bude ulozena prave v tom poli, chosen = "open" nodes
-            ChoosePath(c.puzzles.Count, 2, 2);
-        }
     }
     
     public override void StartPhase()
@@ -204,25 +168,46 @@ public class PipePuzzle : AbstractPuzzle
         NewManager.instance.SetWallPicture(tutPicture);
     }
 
-    private void ChoosePath(int k, int h, int w)//hloupe nahodne vygeneruje mapu pro k-ty puzzle tak, aby mela aspon jedno reseni
+    public List<Wrapper> ChoosePath(int h, int w)//hloupe nahodne vygeneruje mapu pro k-ty puzzle tak, aby mela aspon jedno reseni
     {
-        //setup - nastav vse na "fresh" ()tedy jeste nenavstiveno
-        foreach (List<char> item in chosenList[k])
+        List<Wrapper> chosenList = new List<Wrapper>();
+        //create empty dfs state field (full of "fresh" nodes)
+        for (int i = 0; i < h; i++)
         {
-            for (int i = 0; i < item.Count; i++)
+            chosenList.Add(new Wrapper());
+            chosenList[i].row = new List<char>();
+            for (int j = 0; j < w; j++)
             {
-                item[i] = 'f';
+                chosenList[i].row.Add('f');
             }
         }
         pathFound = false;
         //vyber pole mrizky, pres ktera povede cesta
-        DFS(0, 0, h, w, k);
+        DFS(0, 0, h, w,chosenList);
+
+        return ChooseAllPipes(h, w, chosenList);
     }
 
-    private void DFS(int i, int j, int h, int w, int k)
+    private List<Wrapper> ChooseAllPipes(int h, int w, List<Wrapper> chosenList)//kde je 'o', tam chci dat konkretni trubku viz ChoosePipe(i,j), jinak nahodnou viz totez...
+    {
+        List<Wrapper> otherList = new List<Wrapper>();
+        for (int i = 0; i < h; i++)
+        {
+            otherList.Add(new Wrapper());
+            otherList[i].row = new List<char>();
+            for (int j = 0; j < w; j++)
+            {
+                otherList[i].row.Add(ChoosePipe(i, j, h, w, chosenList));
+            }
+        }
+
+        return otherList;
+    }
+
+    private void DFS(int i, int j, int h, int w, List<Wrapper> chosenList)
     {
 
-        chosenList[k][i][j] = 'o';
+        chosenList[i].row[j] = 'o';
 
         //ukoncovaci podminka
         if (i == h - 1 && j == w - 1)
@@ -239,16 +224,63 @@ public class PipePuzzle : AbstractPuzzle
             {
                 switch (x)
                 {
-                    case 0: if (i + 1 < h && chosenList[k][i + 1][j] == 'f') DFS(i + 1, j, h, w, k); break;//up
-                    case 1: if (j + 1 < w && chosenList[k][i][j + 1] == 'f') DFS(i, j + 1, h, w, k); break;//right
-                    case 2: if (i - 1 >= 0 && chosenList[k][i - 1][j] == 'f') DFS(i - 1, j, h, w, k); break;//down
-                    case 3: if (j - 1 >= 0 && chosenList[k][i][j - 1] == 'f') DFS(i, j - 1, h, w, k); break;//left
+                    case 0: if (i + 1 < h && chosenList[i + 1].row[j] == 'f') DFS(i + 1, j, h, w,chosenList); break;//up
+                    case 1: if (j + 1 < w && chosenList[i].row[j + 1] == 'f') DFS(i, j + 1, h, w,chosenList); break;//right
+                    case 2: if (i - 1 >= 0 && chosenList[i - 1].row[j] == 'f') DFS(i - 1, j, h, w,chosenList); break;//down
+                    case 3: if (j - 1 >= 0 && chosenList[i].row[j - 1] == 'f') DFS(i, j - 1, h, w,chosenList); break;//left
                 }
             }
         }
 
         if (!pathFound)
-            chosenList[k][i][j] = 'c';
+            chosenList[i].row[j] = 'c';
+    }
+
+    private char ChoosePipe(int i, int j, int h, int w, List<Wrapper> chosenList)//po dfs vyplni "open" policka trubkami aby navazovaly, na ne "open" da nahodne trubky
+    {        
+        //vypln vhodne tato policka, ostatni vypln klidne nahodne
+        if (chosenList[i].row[j] == 'o')
+        {
+            bool u, r, d, l;
+            int n = 0;
+            if (i - 1 >= 0) d = chosenList[i - 1].row[j] == 'o'; else d = false;
+            if (i + 1 < h) u = chosenList[i + 1].row[j] == 'o'; else u = false;
+            if (j + 1 < w) r = chosenList[i].row[j + 1] == 'o'; else r = false;
+            if (j - 1 >= 0) l = chosenList[i].row[j - 1] == 'o'; else l = false;
+
+            if (i == 0 && j == 0)
+                l = true;
+            if (i == h - 1 && j == w - 1)
+                r = true;
+
+            if (d) n++;
+            if (u) n++;
+            if (r) n++;
+            if (l) n++;
+
+
+            //podle poctu 'o' sousedu
+            if (n == 4)
+                return 'x';//cross4Prefab;
+            else if (n == 3)
+                return 't';// cross3Prefab;
+            else if ((u && d) || (r && l))
+                return 's';// linePrefab;
+            else if (n == 2)
+                return 'c';// curvePrefab;
+        }
+        else//vyber nahodne
+        {
+            int r = Random.Range(0, 4);
+            switch (r)
+            {
+                case 0: return 't';//cross3Prefab;
+                case 1: return 'x';//cross4Prefab;
+                case 2: return 'c';//curvePrefab;
+                case 3: return 's';//linePrefab;
+            }
+        }
+        return 'a';//to by se nemelo stat...
     }
 
     private void ShuffleList<T>(List<T> list)
@@ -429,12 +461,18 @@ public class PipePuzzle : AbstractPuzzle
             {
                 //kvuli tomu tutorialu...
                 int k;
+                GameObject pipePrefab;
                 if (NewManager.instance.InTut)
-                    k = NewManager.instance.ActiveConfig.puzzles.Count;
+                {
+                    pipePrefab = LoadTutPipe(i, j);
+                }
                 else
+                {
                     k = NewManager.instance.ActivePuzzleIndex;
+                    pipePrefab = LoadPipe(i, j, k);
+                }
 
-                GameObject pipePrefab = ChoosePipe(i,j,h,w, k);
+                Debug.Log(pipePrefab);
 
                 GameObject c = Instantiate(pipePrefab);
                 c.transform.SetParent(pipesHolder.transform);
@@ -458,52 +496,23 @@ public class PipePuzzle : AbstractPuzzle
         helpPipes.Add(cc);
     }
 
-    private GameObject ChoosePipe(int i, int j, int h, int w, int k)//podiva se do chosenListu, aby zjistil, co za trubku patri na policko [i,j]
+    private GameObject LoadTutPipe(int i, int j)//podiva se kterou trubku ma vygenerovat do tutorialu na policko [i,j]
     {
-        //vypln vhodne tato policka, ostatni vypln klidne nahodne
-        if (chosenList[k][i][j] == 'o')
-        {
-            bool u, r, d, l;
-            int n = 0;
-            if (i - 1 >= 0) d = chosenList[k][i - 1][j] == 'o'; else d = false; ;
-            if (i + 1 < h) u = chosenList[k][i + 1][j] == 'o'; else u = false;
-            if (j + 1 < w) r = chosenList[k][i][j + 1] == 'o'; else r = false;
-            if (j - 1 >= 0) l = chosenList[k][i][j - 1] == 'o'; else l = false;
+        if (i == 0 && j == 0) return cross3Prefab;
+        if (i == 1 && j == 1) return cross3Prefab;
+        if (i == 0 && j == 1) return curvePrefab;
+        if (i == 1 && j == 0) return curvePrefab;
 
-            if (i == 0 && j == 0)
-                l = true;
-            if (i == h - 1 && j == w - 1)
-                r = true;
-
-            if (d) n++;
-            if (u) n++;
-            if (r) n++;
-            if (l) n++;
-
-
-            //podle poctu 'o' sousedu
-            if (n == 4)
-                return cross4Prefab;
-            else if (n == 3)
-                return cross3Prefab;
-            else if ((u && d) || (r && l))
-                return linePrefab;
-            else if (n == 2)
-                return curvePrefab;
-        }
-        else//vyber nahodne
-        {
-            int r = Random.Range(0, 4);
-            switch (r)
-            {
-                case 0: return cross3Prefab;
-                case 1: return cross4Prefab;
-                case 2: return curvePrefab;
-                case 3: return linePrefab;
-            }
-        }
-        return null;//to by se nemelo stat...
+        return null;
     }
-
+    private GameObject LoadPipe(int i, int j, int k)//podiva se kterou trubku ma vygenerovat v k-tem puzzle na policko [i,j]
+    {
+        Configuration c = NewManager.instance.ActiveConfig;
+        if (c.puzzles[k].chosenList[i].row[j] == 'c') return curvePrefab;
+        if (c.puzzles[k].chosenList[i].row[j] == 's') return linePrefab;
+        if (c.puzzles[k].chosenList[i].row[j] == 't') return cross3Prefab;
+        if (c.puzzles[k].chosenList[i].row[j] == 'x') return cross4Prefab;
+        return null;
+    }
 
 }

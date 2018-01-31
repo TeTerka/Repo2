@@ -218,7 +218,7 @@ public class ExpMenu : MonoBehaviour {
         e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
         //add a header to the file
         StreamWriter sw = new StreamWriter(e.resultsFile, true);//true for append
-        sw.WriteLine("id,config name,time spent,score");
+        sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
         sw.Close();
         //create file with experiment info
         var ser = new XmlSerializer(typeof(ListOfConfigurations));

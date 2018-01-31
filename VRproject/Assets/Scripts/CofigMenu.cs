@@ -53,8 +53,8 @@ public class CofigMenu : MonoBehaviour {
         tableWidth = table.transform.lossyScale.x;
         tableHeigth = table.transform.lossyScale.z;
 
-        maxPipeWidth = (int)((tableWidth / 2) / pp.PipeSize);
-        maxPipeHeigth = (int)(tableHeigth / pp.PipeSize)+1;
+        maxPipeWidth = (int)((tableWidth / 2) / pp.PipeSize);//ehm
+        maxPipeHeigth = (int)(tableHeigth / pp.PipeSize)+1;//ehm...
 
         maxCubeWidth = (int)((tableWidth / 3) / cp.TileSize);
         maxCubeHeigth = (int)(tableHeigth / cp.TileSize);
@@ -247,8 +247,26 @@ public class CofigMenu : MonoBehaviour {
             q.GetComponentsInChildren<Dropdown>(droplist);
             p.heigthpx = droplist[1].value + 1;
             p.widthpx = droplist[0].value + 1;
-            if(cubeToggle.isOn)
+            if (cubeToggle.isOn)
+            {
+                //priradit cestu k souboru s obrazkem
                 p.pathToImage = texturePaths[i];
+                //a napevno vygenerovat a ulozit zamichani spawnpointu (aby to meli vsichni stejne a taky aby se to dalo zpetne prehravat(tedy nechci nahodu))
+                CubePuzzle cp = (CubePuzzle)NewManager.instance.cubePuzzle;
+                p.spawnPointMix = new List<int>();
+                int nnnn = cp.spawnPoints.Count + (p.heigthpx*p.widthpx);
+                for (int e = 0; e < nnnn; e++)
+                {
+                    p.spawnPointMix.Add(e);
+                }
+                ShuffleList(p.spawnPointMix);
+            }
+            if(pipeToggle.isOn)
+            {
+                //je treba predem vymyslet a ulozit rozmisteni trubek (aby to meli vsichni stejne a taky aby se to dalo zpetne prehravat(tedy nechci nahodu))
+                PipePuzzle pp = (PipePuzzle)NewManager.instance.pipePuzzle;
+                p.chosenList = pp.ChoosePath(p.heigthpx, p.widthpx);
+            }
             c.puzzles.Add(p);
         }
 
@@ -287,6 +305,18 @@ public class CofigMenu : MonoBehaviour {
 
         CleanUp();
 
+    }
+
+    private void ShuffleList<T>(List<T> list)//zamicha seznam cehokoliv
+    {
+        int listCount = list.Count;
+        for (int i = 0; i < listCount; i++)
+        {
+            T temp = list[i];
+            int randomIndex = Random.Range(i, listCount);
+            list[i] = list[randomIndex];
+            list[randomIndex] = temp;
+        }
     }
 
     private bool IsValid(string s)//tedy neobsahuje carku (protoze se to pak bude ukladat do .csv )

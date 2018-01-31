@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Xml.Serialization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +32,14 @@ public class ChooseMenu : MonoBehaviour {
     private List<GameObject> expInfoPanels = new List<GameObject>();
     private bool loadSuccessful;
     private string missingStuff;
+
+    [Header("FileBrowser")]
+    public GUISkin customSkin;
+    protected FileBrowser m_fileBrowser;
+    [SerializeField]
+    protected Texture2D m_directoryImage,
+                        m_fileImage;
+    public GameObject blockingPanel;
 
     private void Start()
     {
@@ -196,7 +206,7 @@ public class ChooseMenu : MonoBehaviour {
             if (!loadSuccessful)
             {
                 otherErrorText.gameObject.SetActive(true);
-                otherErrorText.GetComponentInChildren<Text>().text = "missing filee(s) at:\n" + missingStuff;
+                otherErrorText.GetComponentInChildren<Text>().text = "missing file(s) at:\n" + missingStuff;
             }
         }
     }
@@ -205,6 +215,61 @@ public class ChooseMenu : MonoBehaviour {
     {
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.chooseMenuCanvas.SetActive(false);
+    }
+
+    public void OnReplayClick()
+    {
+        blockingPanel.SetActive(true);
+        m_fileBrowser = new FileBrowser(
+            new Rect(100, 100, Screen.width - 200, Screen.height - 200),
+            "Choose a log file",
+            FileSelectedCallback
+        );
+
+        m_fileBrowser.SelectionPattern = "*.mylog";
+        m_fileBrowser.DirectoryImage = m_directoryImage;
+        m_fileBrowser.FileImage = m_fileImage;
+    }
+    protected void FileSelectedCallback(string path)//nastavi nahled zvoleneho obrazku a zapamatuje si cestu k nemu
+    {
+        m_fileBrowser = null;        
+        blockingPanel.SetActive(false);
+       ////////////////////**load the file
+       //////////////////logger.pathToLogFile = path;
+       ////////////////////**deserialize the configsInfo.xml (correctly adjust path to that!)
+       //////////////////ListOfConfigurations allConfigs = new ListOfConfigurations();
+       //////////////////if (File.Exists(adjusted path + "/configsInfo.xml"))
+       //////////////////{
+       //////////////////    var ser = new XmlSerializer(typeof(ListOfConfigurations));
+       //////////////////    using (var stream = new FileStream(adjusted path + "/configsInfo.xml", FileMode.Open))
+       //////////////////    {        //        
+       //////////////////        allConfigs = ser.Deserialize(stream) as ListOfConfigurations;
+       //////////////////    }
+       //////////////////}
+       ////////////////////**read info from first line of log file (there should be the config name)
+       //////////////////string name = ...
+       ////////////////////**find this in all the configs
+       //////////////////Configuration c = null;
+       //////////////////foreach(Configuration conf in allConfigs)
+       //////////////////{
+       //////////////////    if (conf.name == name)
+       //////////////////        c = conf;
+       //////////////////}
+       ////////////////////**check if it is ok
+       //////////////////if(c==null)
+       //////////////////{
+       //////////////////    //errrrrrror
+       //////////////////    return;
+       //////////////////}
+       ////////////////////**create fake exp containing only this config (but dont create any result folders etc., also dont add it to MenuLogic list of experiments...)
+       //////////////////Experiment e = new Experiment();
+       //////////////////e.name = "Replay "+id;
+       //////////////////e.puzzleType = c.puzzleType;
+       //////////////////e.configs = new List<Configuration> { c };
+       ////////////////////**start that exp in replay mode (so that the rest of the log file will be used to simulate player&coordinator actions)
+       //////////////////NewManager.instance.StartExperiment(e, replayOnly);
+       //////////////////MenuLogic.instance.chooseMenuCanvas.SetActive(false);
+       //////////////////MenuLogic.instance.spectatorCanvas.SetActive(true);
     }
 }
 

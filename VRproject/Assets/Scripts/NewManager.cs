@@ -316,34 +316,35 @@ public class NewManager : MonoBehaviour {
         //check if it should save data
         if (!inTestMode)
         {
+            string dataToSave;
             if (!PhaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat?
             {
                 Debug.Log("Ended too soon!!! The player did not finish, I should not save this data!!!");
+                dataToSave = "invalid";
             }
             else
             {
                 Debug.Log("data saved");
 
                 //save data
-                string dataToSave;
                 if (timeLeft <= 0)//pokud skoncil protoze mu dosel cas
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + "max" + "," + skore;
+                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + "max" + "," + skore;
                 }
                 else//pokud skoncil tim ze dokoncil puzzle
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
+                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
                 }
-                if (File.Exists(activeExperiment.resultsFile))
-                {
-                    StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true);//true for append
-                    sw.WriteLine(dataToSave);
-                    sw.Close();
-                }
-                else
-                {
-                    Debug.Log("error, missing results file!!!");
-                }
+            }
+            if (File.Exists(activeExperiment.resultsFile))
+            {
+                StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true);//true for append
+                sw.WriteLine(dataToSave);
+                sw.Close();
+            }
+            else
+            {
+                Debug.Log("error, missing results file!!!");
             }
         }
         
@@ -396,6 +397,17 @@ public class NewManager : MonoBehaviour {
 
     public void FinishStartPhase()
     {
+        ////////////***************logging******************
+        //////////string newPath = activeExperiment.resultsFile.Substring(0,activeExperiment.resultsFile.LastIndexOf('/')+1) + "/"+idInuput.text+".mylog";
+        //////////var f = File.Create(newPath); f.Close();
+        //////////StreamWriter sw = new StreamWriter(newPath, true);
+        //////////sw.WriteLine(ActiveConfig.name);
+        //////////sw.WriteLine(idInuput.text);
+        //////////sw.WriteLine("**********************");
+        //////////sw.Close();
+        ////////////****************************************
+
+
         phaseLabels[0].GetComponent<Image>().color = Color.white;
         InStart = false;
 

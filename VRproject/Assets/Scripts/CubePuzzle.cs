@@ -145,7 +145,6 @@ public class CubePuzzle : AbstractPuzzle
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         NewManager.instance.SetWallPicture(welcomePicture);
-        /////////////////////////////////////////////modelPictureFrame.material.color = Color.white;
 
         //create the start cube
         List<Texture2D> list = new List<Texture2D>();
@@ -163,7 +162,6 @@ public class CubePuzzle : AbstractPuzzle
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         NewManager.instance.SetWallPicture(tutorialPicture);
-        ///////////////////////////modelPictureFrame.material.color = Color.white;
         //create cubes and containers
         GeneratePuzzleTiles(2, 2, tutTexturesForCubes);
     }
@@ -250,18 +248,6 @@ public class CubePuzzle : AbstractPuzzle
         return result;
     }
 
-    private void ShuffleList<T>(List<T> list)//zamicha seznam cehokoliv
-    {
-        int listCount = list.Count;
-        for (int i = 0; i < listCount; i++)
-        {
-            T temp = list[i];
-            int randomIndex = Random.Range(i, listCount);
-            list[i] = list[randomIndex];
-            list[randomIndex] = temp;
-        }
-    }
-
     //cretes the cubes, adds texture to them and places them on the table
     //also creates the containers
     private void GeneratePuzzleTiles(int h, int w, List<Texture2D> textureSource)
@@ -287,10 +273,27 @@ public class CubePuzzle : AbstractPuzzle
                 k++;
             }
         }
+
         //generuj spawnpoints
         GenerateSpawnPoints(h, w);
         //generuj dilky (krychle)
-        ShuffleList(spawnPositions);
+        /////////////////////////////////ShuffleList(spawnPositions);
+        if (NewManager.instance.InStart)
+        {
+            var x = new List<Vector3> { spawnPositions[0] };//pro start mi staci vzdy jen jeden spawnpoint
+            spawnPositions = x;
+        }
+        else if (NewManager.instance.InTut)
+        {
+            var x = new List<Vector3> { spawnPositions[0], spawnPositions[1], spawnPositions[2], spawnPositions[3] };//tutorial potrebuje napevno 4 spawnPointy, tak vemu prvni 4
+            spawnPositions = x;
+        }
+        else
+        {
+            var x = SpecialShuffle(NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].spawnPointMix, spawnPositions);
+            spawnPositions = x;
+        }
+
         k = 0;
         for (int i = 0; i < h; i++)
         {
@@ -365,6 +368,17 @@ public class CubePuzzle : AbstractPuzzle
             }
         }
 
+    }
+
+    private List<T> SpecialShuffle<T>(List<int> nums,List<T> list)//pro dva stejne dlouhe listy kde nums je tvaru {0,1,2...}
+        //napr pro {2,0,1,3} a {a,b,c,d} vrati {c,a,b,d}
+    {
+        List<T> newList = new List<T>();
+        for (int i = 0; i < nums.Count; i++)
+        {
+            newList.Add(list[nums[i]]);
+        }
+        return newList;
     }
 }
 
