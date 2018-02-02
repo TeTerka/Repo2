@@ -54,7 +54,7 @@ public class TileContainer : MonoBehaviour {
 
     public void SetMatches(Transform tile, int tileIndex)//container zjisti, jestli na nej pasuje takto natoceni dilek (info o dilku predavano v parametrech)
     {
-        int n = cp.ModelPictureNumber;//zjisti od Managera co za obrazek se ma skladat
+        int n = cp.ModelPictureNumber;//zjisti od Managera co za obrazek se ma skladat (v tomto pripade je na kotce jen jeden obrazek, takze tohle je vzdy nula)
         Matches = (CheckIndex(tileIndex) && CheckFace(tile, n) && CheckFaceRotation(tile, n));//zjisti jestli tedy dilek pasuje
     }
 

@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 //ovladani pro NewSpectatorCanvas
 
@@ -58,17 +56,29 @@ public class UImanagerScript : MonoBehaviour {
         //initiate welcome phase
     }
 
+    private bool timeStopped = false;
     public void PauseButtonClick()
     {
-        //activate pause screeen (just like the phaseLoadingPanel but with a resume button on it)
-        //stop reading input from the controllers
-        //somehow pause the countdown (just pause, dont cancel)
-        //set the NPC to a paused mode (maybe dont freez him but put him on idle cycle...)
-    }
+        //funguje pouze pro ReplayMode, v normalnim modu by nemelo smysl
 
-    public void ResumeButtonClick()
+        if(NewManager.instance.InReplayMode)
+        {
+            if (timeStopped)
+            {
+                Time.timeScale = 1;
+                timeStopped = false;
+            }
+            else
+            {
+                Time.timeScale = 0;
+                timeStopped = true;
+            }
+        }
+    }
+    public void MakeSureTimeIsntStopped()//nutne kdyby kliknul na quit zatimco je prehravani pauznute
     {
-        //opak
+        Time.timeScale = 1;
+        timeStopped = false;
     }
 
 }

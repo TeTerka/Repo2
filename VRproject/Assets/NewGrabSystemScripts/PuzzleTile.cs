@@ -18,7 +18,7 @@ public class PuzzleTile : GragableObject {
     private Animator animator;
     private Vector3 spawnedAt;//misto kde byl spawnovan - aby se tam pripane zas mohl respawnovat
     //zjistovani kolidujicich policek mrizky (= colliding containers)
-    List<TileContainer> listOfContainers;
+    private List<TileContainer> listOfContainers;
 
     public override void Awake()//or start?
     {
@@ -28,7 +28,7 @@ public class PuzzleTile : GragableObject {
         grid = cp.containersHolder.transform;
         listOfContainers = cp.ContainerList;
 
-        animator = GetComponent<Animator>();//prefab ho musi mit!
+        animator = GetComponent<Animator>();//prefab ho musi mit, je to kvuli animaci pri respawnu
     }
 
     public override void OnTriggerReleased(ControllerScript controller,bool applyVelocity)
@@ -57,16 +57,16 @@ public class PuzzleTile : GragableObject {
             collidingContainer.GetComponent<TileContainer>().CancelHighlight();
             collidingContainer = null;
 
-            //NewManager.instance.OnCubePlaced(placedAt.Matches);//Mananger zkountroluje, jestli se timto nahodou nedokoncila cela skladacka
+            //CubePuzzle zkontroluje, jestli se timto nahodou nedokoncila cela skladacka
             cp.OnCubePlaced(placedAt.Matches);
         }
-        physicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dolo OnPressed...)
+        PhysicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
     }
     public override void OnTriggerPressed(ControllerScript controller)
     {
         base.OnTriggerPressed(controller);
-        physicsCollider.size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
-        if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne
+        PhysicsCollider.size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
+        if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne (a zavola OnCubeRemoved...)
         {
             ClearInfoAboutPlacing();
         }
@@ -80,7 +80,7 @@ public class PuzzleTile : GragableObject {
         listOfContainers = cp.ContainerList;
     }
 
-    public void RespawnYourself()//respawnuje sam sebe na misto, kde byl a zacatku vytvoren
+    public void RespawnYourself()//respawnuje sam sebe na misto, kde byl na zacatku vytvoren
     {
         OnRespawn();
         StartCoroutine(PuzzleTileFadeOut(false));
@@ -102,7 +102,6 @@ public class PuzzleTile : GragableObject {
     {
         placedAt.isEmpty = true;
 
-        //NewManager.instance.OnCubeRemoved(placedAt.Matches);
         CubePuzzle cp = (CubePuzzle)NewManager.instance.CurrentPuzzle;
         cp.OnCubeRemoved(placedAt.Matches);
 
@@ -127,7 +126,7 @@ public class PuzzleTile : GragableObject {
             collidingContainer.GetComponent<TileContainer>().CancelHighlight();
             collidingContainer = null;
         }
-        physicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
+        PhysicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//(projistotu) vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
     }
 
     IEnumerator PuzzleTileFadeOut(bool destroy)
@@ -209,7 +208,7 @@ public class PuzzleTile : GragableObject {
         }
         else if (alpha <= 135)
         {
-            float beta = Vector3.Angle(grid.forward, new Vector3(vect.x, 0, vect.z));//cosi jako projekce do roviny xz
+            float beta = Vector3.Angle(grid.forward, new Vector3(vect.x, 0, vect.z));
             if (beta < 45)
             {
                 return (grid.forward);

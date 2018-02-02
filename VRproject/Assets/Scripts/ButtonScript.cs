@@ -8,13 +8,14 @@ public class ButtonScript : MonoBehaviour
 {
     private bool isClicking = false;
     Animator animator;
-    private void Awake()
+    private void Start()
     {
         animator = GetComponent<Animator>();
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Controller"))
+        //klikne pokud se ho dotkne collider ovladace
+        if (other.CompareTag("Controller")&&(!NewManager.instance.InReplayMode))
         {
             if (!isClicking)
             {
@@ -33,10 +34,14 @@ public class ButtonScript : MonoBehaviour
         isClicking = false;
     }
 
-    private void ClickEffect()//predacasne ukonci skladani -> konec faze + kontrola spravnosti
+    public void ClickEffect()//predacasne ukonci skladani -> konec faze + kontrola spravnosti......public jen kvuli loggeru!!!!!!!!!!!!!!
     {
         if (!NewManager.instance.PhaseFinished)
         {
+            //*********logging********
+            if(!NewManager.instance.InReplayMode)
+                Logger.instance.Log(Time.time + " Press");//"player Pressed the button"
+            //************************
             PipePuzzle p = (PipePuzzle)NewManager.instance.CurrentPuzzle;//(tohle je ok, protoze tlacitko se popuziva pouze v PipePuzzle)
             p.Check();
         }

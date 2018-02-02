@@ -10,13 +10,13 @@ public class CubePuzzle : AbstractPuzzle
 
     [Header("containers")]
     public GameObject containerPrefab;
-    public GameObject containersHolder;//public??????????????????????????????????????????
+    public GameObject containersHolder;//public??????
     public GameObject center;//center of the table
     public List<TileContainer> ContainerList { get; private set; }
 
     [Header("tiles")]
     public GameObject tilePrafab;
-    public List<Transform> spawnPoints = new List<Transform>();//seznam napevno urcenych spawnpointu (ty pod stolem)
+    public List<Transform> spawnPoints = new List<Transform>();//seznam napevno urcenych spawnpointu (ty pod stolem)//public???????
     public GameObject tileHolder;
     public float TileSize { get; private set; }
     private List<GameObject> tileList = new List<GameObject>();
@@ -101,23 +101,24 @@ public class CubePuzzle : AbstractPuzzle
             tutTexturesForCubes = CreateTexturesForCubes(2, 2, tutInputPicture);
         }
         //create textures for puzzles
-        //and create textures for model picture(s)
         for (int i = 0; i < c.puzzles.Count; i++)
         {
+            Puzzle puzzle = c.puzzles[i];
             Texture2D tt;//textura celeho vzoroveho obrazku
-            if ((tt = MenuLogic.instance.LoadTexture(c.puzzles[i].pathToImage)) == null)//v pripade chyby nahrad obrazek vykricnikem....ale nic neukoncuj, je to jen varovani
+            if ((tt = MenuLogic.instance.LoadTexture(puzzle.pathToImage)) == null)//v pripade chyby nahrad obrazek vykricnikem....ale nic neukoncuj, je to jen varovani
             {
-                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, MenuLogic.instance.missingImage.texture));
+                texturesForCubes.Add(CreateTexturesForCubes(puzzle.heigthpx, puzzle.widthpx, MenuLogic.instance.missingImage.texture));
                 tt = MenuLogic.instance.missingImage.texture;
             }
             else//jinak normalne nahraj obrazky ze souboru
             {
-                texturesForCubes.Add(CreateTexturesForCubes(c.puzzles[i].heigthpx, c.puzzles[i].widthpx, tt));
+                texturesForCubes.Add(CreateTexturesForCubes(puzzle.heigthpx, puzzle.widthpx, tt));
             }
-            int sideWidth = Mathf.Min(tt.height / c.puzzles[i].heigthpx, tt.width / c.puzzles[i].widthpx);
-            Texture2D t = new Texture2D(sideWidth * c.puzzles[i].widthpx, sideWidth * c.puzzles[i].heigthpx);//textura oriznuteho vzoroveho obrazku
-            Color[] block = tt.GetPixels(0, 0, sideWidth * c.puzzles[i].widthpx, sideWidth * c.puzzles[i].heigthpx);
-            t.SetPixels(0, 0, sideWidth * c.puzzles[i].widthpx, sideWidth * c.puzzles[i].heigthpx, block);
+            //and create textures for model picture(s)
+            int sideWidth = Mathf.Min(tt.height / puzzle.heigthpx, tt.width / puzzle.widthpx);
+            Texture2D t = new Texture2D(sideWidth * puzzle.widthpx, sideWidth * puzzle.heigthpx);//textura oriznuteho vzoroveho obrazku
+            Color[] block = tt.GetPixels(0, 0, sideWidth * puzzle.widthpx, sideWidth * puzzle.heigthpx);
+            t.SetPixels(0, 0, sideWidth * puzzle.widthpx, sideWidth * puzzle.heigthpx, block);
             t.Apply();
             modelPictures.Add(t);
         }
@@ -125,17 +126,19 @@ public class CubePuzzle : AbstractPuzzle
 
     public override void StartPhase()
     {
+        int puzzleIndex = NewManager.instance.ActivePuzzleIndex;
+        Puzzle puzzle = NewManager.instance.ActiveConfig.puzzles[puzzleIndex];
+
         //scaling of the model picture
-        //////imageHolder.localScale = NewManager.instance.originalScale;
-        float x = NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].widthpx * TileSize * 3f;//=>model picture 3x vestsi nez mrizka na skladani
-        float y = NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].heigthpx * TileSize * 3f;
-        //////imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
+        float x = puzzle.widthpx * TileSize * 3f;//=>model picture 3x vestsi nez mrizka na skladani
+        float y = puzzle.heigthpx * TileSize * 3f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
-        NewManager.instance.SetWallPicture(modelPictures[NewManager.instance.ActivePuzzleIndex]);
+        //set model picture
+        NewManager.instance.SetWallPicture(modelPictures[puzzleIndex]);
 
         //create cubes and containers
-        GeneratePuzzleTiles(NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].heigthpx, NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].widthpx, texturesForCubes[NewManager.instance.ActivePuzzleIndex]);
+        GeneratePuzzleTiles(puzzle.heigthpx, puzzle.widthpx, texturesForCubes[puzzleIndex]);
     }
 
     public override void StartStart()
@@ -166,7 +169,7 @@ public class CubePuzzle : AbstractPuzzle
         GeneratePuzzleTiles(2, 2, tutTexturesForCubes);
     }
 
-    public void BasicFinish()
+    private void BasicFinish()
     {
         //destroy tiles
         foreach (GameObject tile in tileList)
@@ -182,7 +185,7 @@ public class CubePuzzle : AbstractPuzzle
         ContainerList.Clear();
     }
 
-    public bool CheckIfComplete()
+    private bool CheckIfComplete()
     {
         bool finished = true;
         foreach (TileContainer item in ContainerList)
@@ -196,6 +199,8 @@ public class CubePuzzle : AbstractPuzzle
         return finished;
     }
 
+
+    //hlaseni pro managera
     public void OnCubeRemoved(bool correctlyPlaced)//when player pics cube up from the grid
     {
         if (correctlyPlaced)
@@ -276,24 +281,24 @@ public class CubePuzzle : AbstractPuzzle
 
         //generuj spawnpoints
         GenerateSpawnPoints(h, w);
-        //generuj dilky (krychle)
-        /////////////////////////////////ShuffleList(spawnPositions);
+        //...a spravne je zamichej
         if (NewManager.instance.InStart)
         {
-            var x = new List<Vector3> { spawnPositions[0] };//pro start mi staci vzdy jen jeden spawnpoint
+            List<Vector3> x = new List<Vector3> { spawnPositions[0] };//pro start mi staci vzdy jen jeden spawnpoint
             spawnPositions = x;
         }
         else if (NewManager.instance.InTut)
         {
-            var x = new List<Vector3> { spawnPositions[0], spawnPositions[1], spawnPositions[2], spawnPositions[3] };//tutorial potrebuje napevno 4 spawnPointy, tak vemu prvni 4
+            List<Vector3> x = new List<Vector3> { spawnPositions[0], spawnPositions[1], spawnPositions[2], spawnPositions[3] };//tutorial potrebuje napevno 4 spawnPointy, tak vemu prvni 4
             spawnPositions = x;
         }
         else
         {
-            var x = SpecialShuffle(NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].spawnPointMix, spawnPositions);
+            List<Vector3> x = SpecialShuffle(NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].spawnPointMix, spawnPositions);
             spawnPositions = x;
         }
 
+        //generuj dilky (krychle)
         k = 0;
         for (int i = 0; i < h; i++)
         {
@@ -306,7 +311,6 @@ public class CubePuzzle : AbstractPuzzle
                 //Quaternion randomRotation = Quaternion.LookRotation(axies[randomIndex1], axies[randomIndex2]);
 
                 //create the cube
-                //GameObject t = Instantiate(tilePrafab, spawnPoints[k].position,randomRotation);
                 GameObject t = Instantiate(tilePrafab, spawnPositions[k], Quaternion.LookRotation(axies[3], axies[1]));
                 t.transform.SetParent(tileHolder.transform);
                 t.transform.localScale = new Vector3(TileSize * 100, TileSize * 100, TileSize * 100);// *100 protoze moje krychle z blenderu je omylem 100x mensi nez krychle v unity...
@@ -370,7 +374,7 @@ public class CubePuzzle : AbstractPuzzle
 
     }
 
-    private List<T> SpecialShuffle<T>(List<int> nums,List<T> list)//pro dva stejne dlouhe listy kde nums je tvaru {0,1,2...}
+    private List<T> SpecialShuffle<T>(List<int> nums,List<T> list)//pro dva stejne dlouhe listy, kde nums obsahuje prave vsechna cisla od 0 do nums.Count-1
         //napr pro {2,0,1,3} a {a,b,c,d} vrati {c,a,b,d}
     {
         List<T> newList = new List<T>();

@@ -21,8 +21,7 @@ public class ControllerScript : MonoBehaviour {
     //pamatovane objekty
     private GragableObject interactingObject;//objekt ktery je ovladacem drzen
     public void StopHoldingIt()//kvuli respawnu je traba obcas neco hraci "vytrhnout z ruky", proto ostatni tridy mohou nastavit interactingObject = null
-                               //just like ReleaseObject but without  interactingObject.OnTriggerReleased(this,true);
-                               //is that ok?
+                               //just like ReleaseObject but without  interactingObject.OnTriggerReleased
     {
         interactingObject = null;
     }
@@ -43,6 +42,11 @@ public class ControllerScript : MonoBehaviour {
 
     void Update()
     {
+        if(NewManager.instance.InReplayMode)//****************
+        {
+            return;
+        }
+
         //check input for trigger up/down
         if (!isFake)
         {

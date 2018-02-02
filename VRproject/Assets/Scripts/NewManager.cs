@@ -13,7 +13,7 @@ public class NewManager : MonoBehaviour {
     public AbstractPuzzle cubePuzzle;
     public AbstractPuzzle pipePuzzle;
 
-    //info o aktualni fazi
+    //info o stavu
     public AbstractPuzzle CurrentPuzzle { get; private set; }
 
     private Experiment activeExperiment = null;
@@ -23,7 +23,8 @@ public class NewManager : MonoBehaviour {
     public bool InTut { get; private set; }
     public bool PhaseFinished { get; private set; }
 
-    private bool inTestMode = false;//to by taky mohlo byt getset info o stavu, ne?
+    public bool InTestMode { get; private set; }
+    public bool InReplayMode { get; private set; }
 
     [Header("model picture")]
     public Renderer modelPictureFrame;
@@ -57,6 +58,7 @@ public class NewManager : MonoBehaviour {
     public GameObject phaseLoadingPanel;
     public GameObject testModeHighlight;
     public Text expNameText;
+    public Button pauseButton;
 
     //scrollview ui
     public GameObject phaseScrollContent;
@@ -66,21 +68,18 @@ public class NewManager : MonoBehaviour {
     private List<Button> configButtons = new List<Button>();
     public Button configNameButtonPrafab;
 
-    [Header("for testing only")]
-    public Text resultsText;
-
     [Header("for changing NPC models and behaviours")]
     public GameObject theNpc;
     public Transform npcPoint;
     public List<NpcModel> npcModels = new List<NpcModel>();//vsechny musi mit komponentu Animator!
     public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
 
-    //new stuff*****************************************************
-    [Header("Animation stuff")]
+    [Header("Animation stuff")]//pouziva to WelcomeSpeechBehaviour...
     public string npcName = "";
     public GameObject subtitlesCanvas;
     public int whoWantsSubtitles = -1;
-    //********f*****************************************************
+
+    public UImanagerScript UImangr;
 
 
     //***********************************************THE VERY BEGINNING********************************************************************
@@ -93,11 +92,14 @@ public class NewManager : MonoBehaviour {
         }
         instance = this;
 
+        //prepare room
         ScaleRoomToFitPlayArea();
 
-        //obsah sceny pred dokoncenim setupu
+        //inicializace
         modelPictureFrame.material.mainTexture = null;
         modelPictureFrame.material.color = Color.white;
+        InTestMode = false;
+        InReplayMode = false;
     }
 
     private void ScaleRoomToFitPlayArea()//scale the virtual room so that it is the same size as the real room
@@ -108,7 +110,7 @@ public class NewManager : MonoBehaviour {
         //tady to chce nejaky wait, aby se rozmery mistnosti stihly nacist....muze to chvilku trvat..
         while (!SteamVR_PlayArea.GetBounds(SteamVR_PlayArea.Size.Calibrated, ref rect))
         {
-            System.Threading.Thread.Sleep(1000);//je ok takhle to cely uspat???
+            System.Threading.Thread.Sleep(1000);
         }
 
         //count new scale
@@ -119,7 +121,7 @@ public class NewManager : MonoBehaviour {
         level.localScale = newScale;
         //move camera rig to original position
         this.transform.position = cameraRigPoint.position;
-        //save this scale of model picture so that puzzles can change it but they also can go back to this size;
+        //save this scale of model picture so that puzzles can change it but they also can go back to this size
         originalScale = imageHolder.localScale;
 
         //adjust scale to objects which should keep original size
@@ -136,10 +138,11 @@ public class NewManager : MonoBehaviour {
 
     //************************************** STARTING & FINISHING EXPERIMENTS & CONFIGURATIONS *****************************************************
 
-    public void StartExperiment(Experiment e,bool justTesting)
+    public void StartExperiment(Experiment e,bool justTesting,bool justReplay)
     {
-        inTestMode = justTesting;
-        testModeHighlight.SetActive(inTestMode);
+        InTestMode = justTesting;
+        testModeHighlight.SetActive(InTestMode);
+        InReplayMode = justReplay;//*****************************
 
         activeExperiment = e;
         expNameText.text = e.name;
@@ -158,9 +161,31 @@ public class NewManager : MonoBehaviour {
             p.onClick.AddListener(delegate { if (InStart) { FinishStartPhase(); FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });
         }
 
+        //*******************
+        if(InReplayMode)//deaktivuj nezadouci ovladaci prvky
+        {
+            SetControlsInteractible(false);
+        }
+        else
+        {
+            SetControlsInteractible(true);
+        }
+        //*******************
+
         //start the first configuration (obviously every experiment must have at least one)
         StartConfig(e.configs[0]);
     }
+    private void SetControlsInteractible(bool b)
+    {
+        nextButton.interactable = b;
+        foreach (var item in configButtons)
+        {
+            item.interactable = b;
+        }
+        playeridInputField.interactable = b;
+        pauseButton.interactable = !b;
+    }
+
     private void FinishExperiment()//should be called only after current configuration was correctly finished
     {
         //clear the configButtons
@@ -175,48 +200,6 @@ public class NewManager : MonoBehaviour {
         CurrentPuzzle = null;
     }
 
-    public void OnQuitClicked()
-    {
-        if (InStart)
-        {
-            FinishStartPhase();
-        }
-        else
-        {
-            if (InTut)
-            {
-                FinishTutorial();
-            }
-            else
-            {
-                PhaseFinish();
-            }
-        }
-
-        FinishCurrentConfig();
-        FinishExperiment();
-        MenuLogic.instance.spectatorCanvas.SetActive(false);
-        MenuLogic.instance.chooseMenuCanvas.SetActive(true);
-        //staci to takhle, nebo jeste nejake specialni chovani....
-    }
-    private void FinishCurrentConfig()//can be called only after current phase was correctly finished
-    {
-        //tady by se to melo zeptat, jestli opravdu chci prepnout na jinou konfiguraci.....
-
-        CurrentPuzzle.FinishConfig();
-
-        //clear the phase scrollview...
-        for (int i = phaseLabels.Count - 1; i >= 0; i--)
-        {
-            Destroy(phaseLabels[i]);
-            phaseLabels.RemoveAt(i);
-        }
-
-        imageHolder.localScale = originalScale;
-        DestroyCharacter();
-        ActiveConfig = null;
-        idInuput.text = "";
-    }
     private void StartConfig(Configuration c)
     {
         ActiveConfig = c;
@@ -274,6 +257,25 @@ public class NewManager : MonoBehaviour {
         StartStart();
     }
 
+    private void FinishCurrentConfig()//can be called only after current phase was correctly finished
+    {
+        //tady by se to mozna melo zeptat, jestli opravdu chci prepnout na jinou konfiguraci.....
+
+        CurrentPuzzle.FinishConfig();
+
+        //clear the phase scrollview...
+        for (int i = phaseLabels.Count - 1; i >= 0; i--)
+        {
+            Destroy(phaseLabels[i]);
+            phaseLabels.RemoveAt(i);
+        }
+
+        imageHolder.localScale = originalScale;
+        DestroyCharacter();
+        ActiveConfig = null;
+        idInuput.text = "";
+    }
+
     //********************************************************* PHASES **********************************************************************
 
     private void PhaseStart()
@@ -299,7 +301,6 @@ public class NewManager : MonoBehaviour {
         if(theNpc!=null)
             theNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
 
-        //a zacit resit nejake logovani a ukladani vysledku a tak...
     }
     private void PhaseFinish()
     {
@@ -314,19 +315,19 @@ public class NewManager : MonoBehaviour {
         }
 
         //check if it should save data
-        if (!inTestMode)
+        if ((!InTestMode)&&(!InReplayMode))
         {
             string dataToSave;
             if (!PhaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat?
             {
                 Debug.Log("Ended too soon!!! The player did not finish, I should not save this data!!!");
-                dataToSave = "invalid";
+                dataToSave = idInuput.text + ",invalid";
             }
             else
             {
                 Debug.Log("data saved");
 
-                //save data
+                //save data (ve tvaru: id,config,puzzle,w,h,time left,score)
                 if (timeLeft <= 0)//pokud skoncil protoze mu dosel cas
                 {
                     dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + "max" + "," + skore;
@@ -338,25 +339,17 @@ public class NewManager : MonoBehaviour {
             }
             if (File.Exists(activeExperiment.resultsFile))
             {
-                StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true);//true for append
-                sw.WriteLine(dataToSave);
-                sw.Close();
+                using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))//true for append
+                {
+                    sw.WriteLine(dataToSave);
+                    sw.Close();
+                }
             }
             else
             {
                 Debug.Log("error, missing results file!!!");
             }
         }
-        
-        ///////////////if (timeLeft > 0)
-        ///////////////{
-        ///////////////    resultsText.text = "You finished it in " + (activeConfig.timeLimit - timeLeft) + "seconds!";//je to treba jeste zaokrouhlit...
-        ///////////////}
-        ///////////////else
-        ///////////////{
-        ///////////////    resultsText.text = "You ran out of time, number of tiles placed correctly: " + scoreText.text;
-        ///////////////}
-        ///////////////resultsText.text += "\n NOW TAKE OFF THE HEADSET";
 
         CurrentPuzzle.EndPhase();
         BasicFinish();
@@ -365,13 +358,18 @@ public class NewManager : MonoBehaviour {
         timeLeft = 0;
         countingDown = false;
         timerText.text = "0:00.0";
-        //...
     }
 
     public void StartStart()//sets up the start phase
     {
+        //**************************************
+        if (!InReplayMode)
+        {
+            Logger.instance.SetLoggerPath(null);
+        }
+        //******************************************
+
         //general preparations...
-        playeridInputField.interactable = true;
         InStart = true;
         phaseLabels[0].GetComponent<Image>().color = Color.green;
         nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
@@ -379,10 +377,15 @@ public class NewManager : MonoBehaviour {
         //puzzle specific preparation
         CurrentPuzzle.StartStart();
 
-        //make it possible to switch to different configuration
-        foreach (var item in configButtons)
+        if (!InReplayMode)//pri prehravani nechci zaktivnovat zadne ovladaci prvky krome quit a changeCam buttonu
         {
-            item.interactable = true;
+            //make it possible to switch to different configuration
+            foreach (var item in configButtons)
+            {
+                item.interactable = true;
+            }
+            //...and to change id
+            playeridInputField.interactable = true;
         }
 
         //animace NPC
@@ -391,21 +394,37 @@ public class NewManager : MonoBehaviour {
             theNpc.GetComponent<Animator>().SetTrigger("TabletUp");
             theNpc.GetComponent<Animator>().SetTrigger("StartStart");
         }
-        //text (rec NPC nebo napis na tabuli)
-        //...
+
+        if(InReplayMode)//****************
+        {
+            Debug.Log("started");
+            StartCoroutine(SwitchPhase());
+        }
     }
 
     public void FinishStartPhase()
     {
-        ////////////***************logging******************
-        //////////string newPath = activeExperiment.resultsFile.Substring(0,activeExperiment.resultsFile.LastIndexOf('/')+1) + "/"+idInuput.text+".mylog";
-        //////////var f = File.Create(newPath); f.Close();
-        //////////StreamWriter sw = new StreamWriter(newPath, true);
-        //////////sw.WriteLine(ActiveConfig.name);
-        //////////sw.WriteLine(idInuput.text);
-        //////////sw.WriteLine("**********************");
-        //////////sw.Close();
-        ////////////****************************************
+        //***************logging*********************************
+        if ((!InReplayMode)&&(!InTestMode)&&(idInuput.text!=""))
+        {
+            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + idInuput.text + ".mylog";
+            var f = File.Create(newPath); f.Close();//urcite takovy jeste neexistuje, protoze je zajisteno, ze id jsou v ramci jednoho experimentu unikatni
+            using (StreamWriter sw = new StreamWriter(newPath, true))
+            {
+                sw.WriteLine(ActiveConfig.name);
+                sw.WriteLine(idInuput.text);
+                sw.WriteLine(Time.time);
+                sw.Close();
+            }
+            Logger.instance.SetLoggerPath(newPath);
+        }
+
+        if(InReplayMode)
+        {
+            Debug.Log("started reading");
+            Logger.instance.ReadLog();//zacni prehravat
+        }
+        //*******************************************************
 
 
         phaseLabels[0].GetComponent<Image>().color = Color.white;
@@ -437,8 +456,6 @@ public class NewManager : MonoBehaviour {
             theNpc.GetComponent<Animator>().SetTrigger("TabletDown");
             theNpc.GetComponent<Animator>().SetTrigger("StartWelcomeSpeech");
         }
-        //text (rec NPC nebo napis na tabuli)
-        //...
     }
 
     public void FinishTutorial()
@@ -452,7 +469,7 @@ public class NewManager : MonoBehaviour {
 
     public void BasicFinish()
     {
-        //imageHolder.localScale = originalScale;//??????????????????????????????????????????????????????je to takhle lepsi|?
+        //imageHolder.localScale = originalScale;?
 
         //clear other info
         scoreText.text = "0";
@@ -466,7 +483,7 @@ public class NewManager : MonoBehaviour {
     public void TrySwitchPhase(bool skipCondition)
     {
         //specialne pro welcome phase - kontrola jestli bylo zadano unikatni playerID
-        if (InStart && !inTestMode)
+        if (InStart && (!InTestMode)&&(!InReplayMode))
         {
             if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
             {
@@ -492,15 +509,18 @@ public class NewManager : MonoBehaviour {
     }
 
     //mezi fazemi chvilku cekat....hlavne na konci main phase, aby mohl v klidu sundat headset...
-    private IEnumerator SwitchPhase()
+    public IEnumerator SwitchPhase()//(public jen kvuli loggeru)
     {
-        phaseLoadingPanel.SetActive(true);//zamezi koordinatorovi na cokoliv klikat v prubeho prepinani faze
-        //ani hrac v teto dobe nemuze nic pokazit, protoze OnCubePlaced pripadne otoceni trubky probehne jen pokud neni phaseFinished
-        //a sebranim krychle se nic nezkazi (respawnuji se i z ruky)....a nic dalsiho uz hrac delat neumi, takze ok
+        phaseLoadingPanel.SetActive(true);//zamezi koordinatorovi na cokoliv klikat v prubehu prepinani faze
+                                          //ani hrac v teto dobe nemuze nic pokazit, protoze OnCubePlaced pripadne otoceni trubky probehne jen pokud neni phaseFinished
+                                          //a sebranim krychle se nic nezkazi (respawnuji se i z ruky)....a nic dalsiho uz hrac delat neumi, takze ok
+
+        if (!InReplayMode)
+            Logger.instance.Log(Time.time + " Next");//*******logging*****************
 
         if (InStart)//if just finished start phase
         {
-            if (!inTestMode)
+            if ((!InTestMode)&&(!InReplayMode))
             {
                 activeExperiment.ids.Add(idInuput.text);
             }
@@ -513,6 +533,10 @@ public class NewManager : MonoBehaviour {
             else
             {
                 ActivePuzzleIndex = -1;//od ted zacinaji main puzzly
+                if (ActiveConfig.puzzles.Count == 1)//pokud je v aktualni konfiguraci jen jeden puzzle, je to zaroven posledni puzzle
+                {
+                    nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
+                }
                 PhaseStart();
             }
         }
@@ -533,11 +557,18 @@ public class NewManager : MonoBehaviour {
             {
                 if (ActivePuzzleIndex == ActiveConfig.puzzles.Count - 1)//if just finished the last puzzle
                 {
-                    playeridInputField.interactable = true;
                     PhaseFinish();
                     yield return new WaitForSeconds(2);
 
-                    StartStart();
+                    if (InReplayMode)//*************************
+                    {
+                        phaseLoadingPanel.SetActive(false);
+                        yield break;//zastav prehravani (jinak by se to soatalo do startu a tam se prehravani spustilo znova)
+                    }
+                    else
+                    {
+                        StartStart();
+                    }
                 }
                 else//if just finished any other puzzle
                 {
@@ -553,6 +584,7 @@ public class NewManager : MonoBehaviour {
         }
         phaseLoadingPanel.SetActive(false);//=>koordinator zase muze volne klikat
     }
+
     //********************************************** POMOCNE FUNKCE ***************************************************************************
     private bool ContainsWhitespaceOnly(string s)
     {
@@ -642,6 +674,38 @@ public class NewManager : MonoBehaviour {
     {
         imageHolder.localScale = originalScale;
         imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
+    }
+
+    public void OnQuitClicked()
+    {
+        playeridInputField.text = "";//************
+        StopAllCoroutines();//************
+
+        if (InStart)
+        {
+            FinishStartPhase();
+        }
+        else
+        {
+            if (InTut)
+            {
+                FinishTutorial();
+            }
+            else
+            {
+                PhaseFinish();
+            }
+        }
+
+        FinishCurrentConfig();
+        FinishExperiment();
+        MenuLogic.instance.spectatorCanvas.SetActive(false);
+        MenuLogic.instance.chooseMenuCanvas.SetActive(true);
+        //staci to takhle, nebo jeste nejake specialni chovani....
+
+        //******************************************************
+        Logger.instance.StopLogger();
+        UImangr.MakeSureTimeIsntStopped();
     }
 
     //********************************************************** NPC stuff ***************************************************************

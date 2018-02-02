@@ -38,6 +38,7 @@ public class MenuLogic: MonoBehaviour {
             {
                 availableExperiments = new ListOfExperiments();
                 availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
+                stream.Close();
             }
         }
     }
@@ -45,9 +46,11 @@ public class MenuLogic: MonoBehaviour {
     private void OnApplicationQuit()//pri vypnuti se provede ulozeni seznamu sablon experimentu
     {
         var ser = new XmlSerializer(typeof(ListOfExperiments));
-        var stream = new System.IO.FileStream(Application.dataPath+"/eee.xml", System.IO.FileMode.Create);
-        ser.Serialize(stream, availableExperiments);
-        stream.Close();
+        using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Create))
+        {
+            ser.Serialize(stream, availableExperiments);
+            stream.Close();
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,7 +145,7 @@ public class Configuration
     public int timeLimit;//time limit for each puzzle, in seconds
     public string modelName;
     public string behaviourName;
-    public string puzzleType;//**********************************************************************************
+    public string puzzleType;
     //
     [XmlArray("Puzzles")]
     [XmlArrayItem("Puzzle")]
@@ -161,7 +164,7 @@ public class Experiment
 {
     public string name;
     public string resultsFile;
-    public string puzzleType;//**********************************************************************************
+    public string puzzleType;
     [XmlArray("Confiurations")]
     [XmlArrayItem("Configuration")]
     public List<Configuration> configs = new List<Configuration>();

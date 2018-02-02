@@ -18,11 +18,11 @@ public enum FileBrowserType
 
 public class FileBrowser
 {
-    //my stuff................................
+    //my stuff*********************************
     private string[] drives = System.IO.Directory.GetLogicalDrives();
-    //nasledujici (lepsi) varianta nefungje kvuli monu,s tim nic nenadelam...
+    //nasledujici (lepsi) varianta nefungje (kvuli monu?)
     //private DriveInfo[] allDrives = DriveInfo.GetDrives();
-    //.........................................
+    //*****************************************
 
     // Called when the user clicks cancel or select
     public delegate void FinishedCallback(string path);
@@ -383,7 +383,7 @@ public class FileBrowser
         GUILayout.BeginHorizontal();
 
         GUILayout.Label("choose drive:");
-        //my part.......................................................
+        //my stuff.......................................................
         foreach (string str in drives)
         {
             if (Directory.Exists(str))//ale co kdyz neni ready atd.....???
@@ -396,7 +396,7 @@ public class FileBrowser
             }
 
         }
-        //end of..................................................my part
+        //end of..................................................my stuff
 
         GUILayout.FlexibleSpace();
 
