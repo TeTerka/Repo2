@@ -97,7 +97,7 @@ public class GragableObject:MonoBehaviour{
         if (fj != null)
         {
           fj.connectedBody = null;
-          Destroy(fj);//je to treba nebo ne??? asi ano, jinak totiz nefunguje hand to hand...ale nevchapu proc?!??????????????????????????????????
+          Destroy(fj);
         }
     }
 
@@ -112,7 +112,7 @@ public class GragableObject:MonoBehaviour{
         rb.isKinematic = false;
         IsFrozen = false;
     }
-    public virtual void OnDestroy()//eh? kdyz se to jmenuje presne takhle, tak se to asi vola samo kdy je treba...
+    public virtual void OnDestroy()
     {
         if (!IsFree())
         {

@@ -244,34 +244,59 @@ public class ChooseMenu : MonoBehaviour {
         m_fileBrowser = null;        
         blockingPanel.SetActive(false);
 
-        Debug.Log(path);
-
         if (path != null)
         {
-            //**deserialize the configsInfo.xml (correctly adjust path to that!)...+checkovat if File.Exists...!!!!!
+            //**deserialize the configsInfo.xml (correctly adjust path to that!)
             string newPath = path.Substring(0, path.LastIndexOf('\\') + 1) + "\\configsInfo.xml";
             ListOfConfigurations allConfigs = new ListOfConfigurations();
-            if (File.Exists(newPath))
+            try
             {
-                var ser = new XmlSerializer(typeof(ListOfConfigurations));
-                using (var stream = new FileStream(newPath, FileMode.Open))
+                if (File.Exists(newPath))
                 {
-                    allConfigs = ser.Deserialize(stream) as ListOfConfigurations;
+                    var ser = new XmlSerializer(typeof(ListOfConfigurations));
+                    using (var stream = new FileStream(newPath, FileMode.Open))
+                    {
+                        allConfigs = ser.Deserialize(stream) as ListOfConfigurations;
+                    }
+                }
+                else
+                {
+                    //Debug.Log("deserialize fail");
+                    //Debug.Log(newPath);
+                    ErrorCatcher.instance.Show("Wanted to deserialize configinfo but file " + newPath + " does not exist.");
+                    return;
                 }
             }
-            else
+            catch (System.Exception exc)
             {
-                //errrrrrrrrror
-                Debug.Log("deserialize fail");
-                Debug.Log(newPath);
+                ErrorCatcher.instance.Show("Wanted to deserialize file " + newPath + " but it threw error " + exc.ToString());
                 return;
             }
+
             //**load the file
             Logger.instance.SetLoggerPath(path);
-            StreamReader file = new StreamReader(path);
-            //**read info from first line of log file (there should be the config name)
-            string name = file.ReadLine();
-            string id = file.ReadLine();
+            string id = null;
+            string name = null;
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    ErrorCatcher.instance.Show("Wanted to read logfile " + path + " but it does not exist.");
+                    return;
+                }
+                using (StreamReader file = new StreamReader(path))
+                {
+                    //**read info from first line of log file (there should be the config name)
+                    name = file.ReadLine();
+                    id = file.ReadLine();
+                    file.Close();
+                }
+            }
+            catch(System.Exception exc)
+            {
+                ErrorCatcher.instance.Show("Wanted to read logfile " + path + " but it threw error " + exc.ToString());
+                return;
+            }
             //**find this in all the configs
             Configuration c = null;
             foreach (Configuration conf in allConfigs.configs)
@@ -285,9 +310,9 @@ public class ChooseMenu : MonoBehaviour {
             //**check if it is ok
             if (c == null)
             {
-                //errrrrrror!!!!!!!!!!!!!!
-                Debug.Log("config fail");
-                Debug.Log(name);
+                //Debug.Log("config fail");
+                //Debug.Log(name);
+                ErrorCatcher.instance.Show("The config "+name+" in logfile " + path + " does not exist.");
                 return;
             }
             //**create fake exp containing only this config (but dont create any result folders etc., also dont add it to MenuLogic list of experiments...)

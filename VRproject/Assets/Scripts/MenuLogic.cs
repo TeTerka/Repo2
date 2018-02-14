@@ -29,32 +29,51 @@ public class MenuLogic: MonoBehaviour {
         }
         instance = this;
 
-        //if there is a exp list file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
+        //if there is a exp list file
         //"load" it
         if (File.Exists(Application.dataPath + "/eee.xml"))
         {
-            var ser = new XmlSerializer(typeof(ListOfExperiments));
-            using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Open))
+            try
             {
-                availableExperiments = new ListOfExperiments();
-                availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
-                stream.Close();
+                var ser = new XmlSerializer(typeof(ListOfExperiments));
+                using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Open))
+                {
+                    availableExperiments = new ListOfExperiments();
+                    availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
+                    stream.Close();
+                }
+            }
+            catch(System.Exception exc)
+            {
+                ErrorCatcher.instance.Show("Wanted to deserialize " + Application.dataPath + "/eee.xml" + " but it threw error " + exc.ToString());
+                return;
             }
         }
     }
 
     private void OnApplicationQuit()//pri vypnuti se provede ulozeni seznamu sablon experimentu
     {
-        var ser = new XmlSerializer(typeof(ListOfExperiments));
-        using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Create))
+        if (!ErrorCatcher.instance.catchedError)//pokud k vypnuti dochazi kvuli erroru, nechci nic ukladat
         {
-            ser.Serialize(stream, availableExperiments);
-            stream.Close();
+            try
+            {
+                var ser = new XmlSerializer(typeof(ListOfExperiments));
+                using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Create))
+                {
+                    ser.Serialize(stream, availableExperiments);
+                    stream.Close();
+                }
+            }
+            catch (System.Exception exc)
+            {
+                ErrorCatcher.instance.Show("Wanted to serialize " + Application.dataPath + "/eee.xml" + " but it threw error " + exc.ToString());
+                Application.CancelQuit();//?????????????????????????????????
+            }
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
     public Sprite LoadNewSprite(string FilePath, float PixelsPerUnit = 100.0f)
     {
 

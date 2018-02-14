@@ -19,7 +19,7 @@ public class CubePuzzle : AbstractPuzzle
     public List<Transform> spawnPoints = new List<Transform>();//seznam napevno urcenych spawnpointu (ty pod stolem)//public???????
     public GameObject tileHolder;
     public float TileSize { get; private set; }
-    private List<GameObject> tileList = new List<GameObject>();
+    public List<GameObject> TileList { get; private set; }
 
     public int ModelPictureNumber { get; private set; }
 
@@ -54,10 +54,12 @@ public class CubePuzzle : AbstractPuzzle
     // |   0   |   1   |   2   |
     // -------------------------
 
+
     private void Awake()
     {
         ModelPictureNumber = 0;
         ContainerList = new List<TileContainer>();
+        TileList = new List<GameObject>();
         TileSize = 0.15f;
     }
 
@@ -172,11 +174,11 @@ public class CubePuzzle : AbstractPuzzle
     private void BasicFinish()
     {
         //destroy tiles
-        foreach (GameObject tile in tileList)
+        foreach (GameObject tile in TileList)
         {
             tile.GetComponent<PuzzleTile>().DestroyYourself();
         }
-        tileList.Clear();
+        TileList.Clear();
         //destroy containers
         foreach (var container in ContainerList)
         {
@@ -332,7 +334,7 @@ public class CubePuzzle : AbstractPuzzle
                 }
                 pt.Initialize(k, spawnPositions[k]);
 
-                tileList.Add(t);
+                TileList.Add(t);
                 k++;
             }
         }

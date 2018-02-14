@@ -20,14 +20,14 @@ public class PipeTile : MonoBehaviour {
     public int I { get; private set; }
     public int J { get;private set; }
 
-    //hidden...ale nestaci get private set....!!!!!
-    public bool seen;
+    ///////////////hidden...
+    /////////////public bool seen;
 
     public void Initialize(int i, int j)
     {
         I = i;
         J = j;
-        seen = false;
+        /////////////seen = false;
     }
 
     public void OnTriggerPressed(ControllerScript controller)

@@ -12,13 +12,62 @@ public class PuzzleTile : GragableObject {
     private CubePuzzle cp;
     //stav
     private TileContainer placedAt = null;
-    private GameObject collidingContainer = null;
+    private TileContainer collidingContainer = null;
     //characteristiky
     private int tileIndex;
     private Animator animator;
     private Vector3 spawnedAt;//misto kde byl spawnovan - aby se tam pripane zas mohl respawnovat
     //zjistovani kolidujicich policek mrizky (= colliding containers)
     private List<TileContainer> listOfContainers;
+
+    public void SimulateDrop()
+    {
+        this.gameObject.transform.position = spawnedAt;
+        this.Unfreez();
+    }
+
+    public bool IfItIsYouSimulateGrab(int index)
+    {
+        if (index == tileIndex)
+        {
+            if ((placedAt != null) && (placedAt.Matches))
+            {
+                cp.OnCubeRemoved(true);
+            }
+            this.Freez();
+            return true;
+        }
+
+        return false;
+    }
+    public void SimulatePlaceTo(int containerIndex,Quaternion rot)
+    {
+        //najdi cilovy container
+        TileContainer target = null;
+        foreach (TileContainer cont in listOfContainers)
+        {
+            if(cont.ContainerIndex==containerIndex)
+            {
+                target = cont;
+                break;
+            }
+        }
+
+        //place it there
+        placedAt = target;
+        //SnapPosition();
+        float offset = cp.TileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
+        Vector3 newPos = new Vector3(target.gameObject.transform.position.x, target.gameObject.transform.position.y + offset, target.gameObject.transform.position.z);
+        transform.position = newPos;
+        //SnapRotation();
+        transform.rotation = rot;
+
+
+        //call stuff like OnCubePlaced...staci?????
+        placedAt.SetMatches(transform, tileIndex);
+        placedAt.isEmpty = false;
+        cp.OnCubePlaced(placedAt.Matches);
+    }
 
     public override void Awake()//or start?
     {
@@ -33,9 +82,13 @@ public class PuzzleTile : GragableObject {
 
     public override void OnTriggerReleased(ControllerScript controller,bool applyVelocity)
     {
-        if (collidingContainer == null || collidingContainer.GetComponent<TileContainer>().isEmpty == false)
+        if (collidingContainer == null || collidingContainer.isEmpty == false)
         {//mimo mrizku => jen normalne upustit
-            //throw
+         //throw
+            //*******logging****************************************************************************
+            string hand; if (controller.isLeft) hand = "left"; else hand = "right";
+            Logger.instance.Log(Time.time + " Drop " + hand);
+            //******************************************************************************************
             base.OnTriggerReleased(controller,true);
         }
         else
@@ -46,7 +99,7 @@ public class PuzzleTile : GragableObject {
             SnapRotation();
             SnapPosition();
             //zpamatuje si na ktere policko je polozen
-            placedAt = collidingContainer.GetComponent<TileContainer>();//containerovy prafab to musi mit!
+            placedAt = collidingContainer;//containerovy prafab to musi mit!
             //zjisti jestli tam pasuje (funkce Fits pak posle tuto informaci Manageru, dilek se o to dal nezajima a tak jako tak tam zustane sedet)
             placedAt.SetMatches(transform, tileIndex);
             //stop applying forces to the cube
@@ -54,8 +107,13 @@ public class PuzzleTile : GragableObject {
             //oznaci policko ze uz neni volne
             placedAt.isEmpty = false;
             //stop highlighting (uz nekoliduje, uz je placedAt)
-            collidingContainer.GetComponent<TileContainer>().CancelHighlight();
+            collidingContainer.CancelHighlight();
             collidingContainer = null;
+
+            //*******logging****************************************************************************
+            string hand; if (controller.isLeft) hand = "left"; else hand = "right";
+            Logger.instance.Log(Time.time + " Place " + hand + " " + placedAt.ContainerIndex + " " + gameObject.transform.rotation.x + " " + gameObject.transform.rotation.y + " " + gameObject.transform.rotation.z + " " + gameObject.transform.rotation.w);
+            //******************************************************************************************
 
             //CubePuzzle zkontroluje, jestli se timto nahodou nedokoncila cela skladacka
             cp.OnCubePlaced(placedAt.Matches);
@@ -64,6 +122,10 @@ public class PuzzleTile : GragableObject {
     }
     public override void OnTriggerPressed(ControllerScript controller)
     {
+        //*******logging****************************************************************************
+        string hand; if (controller.isLeft) hand = "left"; else hand = "right";
+        Logger.instance.Log(Time.time+" Grab "+ hand + " " +tileIndex);
+        //******************************************************************************************
         base.OnTriggerPressed(controller);
         PhysicsCollider.size = new Vector3(0.005f, 0.005f, 0.005f);//collider kostky v ruce je mensi, aby se s ni dalo lepe manipulovat
         if (placedAt != null)//pokud beru dilek z mrizky, nastav ze policko na kterem byl je nyni prazdne (a zavola OnCubeRemoved...)
@@ -82,19 +144,19 @@ public class PuzzleTile : GragableObject {
 
     public void RespawnYourself()//respawnuje sam sebe na misto, kde byl na zacatku vytvoren
     {
+        //*******logging****************************************************************************
+        if (CurrentController != null)//pokud to drzel v nejake ruce, musim provest vlastne drop, pokud to nedrzel, je to z hlediska prehravani jedno...
+        {
+            string hand; if (CurrentController.isLeft) hand = "left"; else hand = "right";
+            Logger.instance.Log(Time.time + " Respawn " + hand + " " + tileIndex);
+        }
+        //******************************************************************************************
         OnRespawn();
         StartCoroutine(PuzzleTileFadeOut(false));
     }
 
     public void DestroyYourself()
     {
-        ////tohle se ale stejne resi OnDstroy, tak to tu mozna ani neni treba...
-        //if (placedAt != null)//pokud je umisteny v mrizce, je treba rict, ze po respawnu uz policko obsazene neni!
-        //{
-        //    placedAt.isEmpty = true;
-        //    placedAt.matches = false;
-        //    ManagerScript.instance.matchingPieces[tileIndex] = false;
-        //}
         StartCoroutine(PuzzleTileFadeOut(true));
     }
 
@@ -123,7 +185,7 @@ public class PuzzleTile : GragableObject {
         }
         if (collidingContainer != null)//pokud je pobliz nejakoho policka, zrus highlightovani toho policka
         {
-            collidingContainer.GetComponent<TileContainer>().CancelHighlight();
+            collidingContainer.CancelHighlight();
             collidingContainer = null;
         }
         PhysicsCollider.size = new Vector3(0.01f, 0.01f, 0.01f);//(projistotu) vrati normalni velikost collideru kostky (nenormalni tam dalo OnPressed...)
@@ -153,7 +215,7 @@ public class PuzzleTile : GragableObject {
         {
             //spocita ke ktremu policku to ma nejbliz (a ne dal nez na 2x hranu kostky)
             float minDist = cp.TileSize*2;
-            GameObject closest = null;
+            TileContainer closest = null;
             foreach (TileContainer container in listOfContainers)
             {
                 if (container.isEmpty)
@@ -162,21 +224,21 @@ public class PuzzleTile : GragableObject {
                     if (dist < minDist)
                     {
                         minDist = dist;
-                        closest = container.gameObject;
+                        closest = container;
                     }
                 }
             }
             //minule nejblizsi policko deaktivuje
             if (collidingContainer != null)
             {
-                collidingContainer.GetComponent<TileContainer>().CancelHighlight();
+                collidingContainer.CancelHighlight();
                 collidingContainer = null;
             }
             //nove nejblizsi policko aktivuje
             collidingContainer = closest;
             if (closest != null)
             {
-                collidingContainer.GetComponent<TileContainer>().Highlight();
+                collidingContainer.Highlight();
             }
         }
     }
@@ -190,7 +252,7 @@ public class PuzzleTile : GragableObject {
     private void SnapPosition()//posune krychli aby pasovala do mrizky
     {
         float offset = cp.TileSize / 2;//co traba jeste +0.1, aby to neblikalo na hrane s kontainerem...?
-        Vector3 newPos = new Vector3(collidingContainer.transform.position.x, collidingContainer.transform.position.y + offset, collidingContainer.transform.position.z);
+        Vector3 newPos = new Vector3(collidingContainer.gameObject.transform.position.x, collidingContainer.gameObject.transform.position.y + offset, collidingContainer.gameObject.transform.position.z);
         transform.position = newPos;
     }
 
@@ -200,7 +262,7 @@ public class PuzzleTile : GragableObject {
         //Vector3 worldUp = grid.up;
         //Vector3 worldFw = grid.forward;
         //Vector3 worldR = grid.right;
-        //pocitam uhly, vysvetleni viz obrazek v modrem sesite...
+
         float alpha = Vector3.Angle(grid.up, vect);
         if (alpha < 45)
         {
@@ -242,7 +304,6 @@ public class PuzzleTile : GragableObject {
         base.OnDestroy();
         if (placedAt != null)//pokud je umisteny v mrizce, je treba rict, ze po destroyi uz policko obsazene neni
         {
-            placedAt.isEmpty = true;
             ClearInfoAboutPlacing();
         }
     }

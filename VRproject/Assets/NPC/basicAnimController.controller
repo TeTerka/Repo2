@@ -74,12 +74,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f2ff4d9fb8265f4f8c5ea2d102ca0b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  replaceName: 0
   timeForASentence: 3
   sentences:
-  - "Ok, za\u010D\xEDn\xE1me..."
+  - text: "Za\u010D\xEDn\xE1me..."
+    replaceAlex: 0
+    audio: {fileID: 0}
   useSound: 0
-  audioClips: []
 --- !u!114 &114123430283263442
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -91,19 +91,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f2ff4d9fb8265f4f8c5ea2d102ca0b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  replaceName: 1
-  timeForASentence: 5
+  timeForASentence: 3
   sentences:
-  - "Dobr\xFD den, v\xEDt\xE1m v\xE1s na dne\u0161n\xEDm experimentu."
-  - "M\xE9 jm\xE9no je Alex a budu v\xE1s prov\xE1zet jednotliv\xFDmi \u010D\xE1stmi."
-  - "Na pultu p\u0159ed sebou m\xE1te sadu krychl\xED."
-  - "Va\u0161im \xFAkolem je sestavit z nich fotografii,"
-  - "jej\xED\u017E fin\xE1ln\xED podobu m\u016F\u017Eete vid\u011Bt na obrazovce za
-    mnou."
-  - "Po \xFAsp\u011B\u0161n\xE9m slo\u017Een\xED se obrazovka v\u017Edy zm\u011Bn\xED"
-  - "a zobraz\xED dal\u0161\xED fotografii ke slo\u017Een\xED."
+  - text: "V\xEDtejte, m\xE9 jm\xE9no je Alex"
+    replaceAlex: 1
+    audio: {fileID: 0}
+  - text: "a budu v\xE1s prov\xE1zet t\xEDmto experimentem."
+    replaceAlex: 0
+    audio: {fileID: 0}
+  - text: "V\xEDtejte v tutorialu."
+    replaceAlex: 0
+    audio: {fileID: 0}
+  - text: "P\u0159ed sebou vid\xEDte obr\xE1zek,"
+    replaceAlex: 0
+    audio: {fileID: 0}
+  - text: "va\u0161\xEDm c\xEDlem je slo\u017Eit jej z kostek."
+    replaceAlex: 0
+    audio: {fileID: 0}
+  - text: "Po dokon\u010Den\xED tutori\xE1lu za\u010Dne prvn\xED \u010D\xE1st experimentu."
+    replaceAlex: 0
+    audio: {fileID: 0}
+  - text: "Hodn\u011B \u0161t\u011Bst\xED."
+    replaceAlex: 0
+    audio: {fileID: 0}
   useSound: 0
-  audioClips: []
 --- !u!1101 &1101013804525934522
 AnimatorStateTransition:
   m_ObjectHideFlags: 3

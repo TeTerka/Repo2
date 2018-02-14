@@ -200,33 +200,45 @@ public class ExpMenu : MonoBehaviour {
         //create experiment (class)
         Experiment e = new Experiment();
         e.name = expName.text;
-        e.puzzleType = puzzleType;//*********************************************************************************************************************
+        e.puzzleType = puzzleType;//*********************************************
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
         }
-        //create folder for results
-        int j = 0;
-        while(Directory.Exists(Application.dataPath + "/" + e.name + j))
+        try
         {
-            j++;
+            //create folder for results
+            int j = 0;
+            while (Directory.Exists(Application.dataPath + "/" + e.name + j))
+            {
+                j++;
+            }
+            Directory.CreateDirectory(Application.dataPath + "/" + e.name + j);
+            //create file for results
+            var f = File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
+            f.Close();
+            e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
+            //add a header to the file
+            using (StreamWriter sw = new StreamWriter(e.resultsFile, true))//true for append
+            {
+                sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
+                sw.Close();
+            }
+            //create file with experiment info
+            var ser = new XmlSerializer(typeof(ListOfConfigurations));
+            using (var stream = new System.IO.FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", System.IO.FileMode.Create))
+            {
+                ListOfConfigurations loc = new ListOfConfigurations();
+                loc.configs = e.configs;
+                ser.Serialize(stream, loc);
+                stream.Close();
+            }
         }
-        Directory.CreateDirectory(Application.dataPath +"/"+ e.name + j);
-        //create file for results
-        var f = File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
-        f.Close();
-        e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
-        //add a header to the file
-        StreamWriter sw = new StreamWriter(e.resultsFile, true);//true for append
-        sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
-        sw.Close();
-        //create file with experiment info
-        var ser = new XmlSerializer(typeof(ListOfConfigurations));
-        var stream = new System.IO.FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", System.IO.FileMode.Create);
-        ListOfConfigurations loc = new ListOfConfigurations();
-        loc.configs = e.configs;
-        ser.Serialize(stream, loc);
-        stream.Close();
+        catch(System.Exception exc)
+        {
+            ErrorCatcher.instance.Show("Wanted to create files for new experiment " + e.name + " but it threw error " + exc.ToString());
+            return;
+        }
 
         //add it to the list
         MenuLogic.instance.availableExperiments.experiments.Add(e);
@@ -259,72 +271,3 @@ public class ExpMenu : MonoBehaviour {
 
 
 }
-
-
-
-
-
-/////////public void RefreshAvailableConfigs()
-/////////{
-/////////    //remove old ones
-/////////    for (int i = availableConfigInfoButtons.Count - 1; i >= 0; i--)
-/////////    {
-/////////        Destroy(availableConfigInfoButtons[i].gameObject);
-/////////        Debug.Log("destroyed");
-/////////    }
-/////////    availableConfigInfoButtons.Clear();
-/////////
-/////////    //add all available configs
-/////////    for (int i = 0; i < MenuLogic.instance.availableConfigs.configs.Count; i++)
-/////////    {
-/////////        var c = MenuLogic.instance.availableConfigs.configs[i];
-/////////        var p = Instantiate(availableConfigInfoButtonPrefab, availableConfigScrollViewContent.transform);
-/////////        List<Text> texts = new List<Text>();
-/////////        p.GetComponentsInChildren<Text>(texts);
-/////////        texts[0].text = c.name;
-/////////        if (c.withNPC == true)
-/////////            texts[1].text = "with NPC";
-/////////        else
-/////////        {
-/////////            texts[1].text = "without NPC";
-/////////        }
-/////////        if (c.withTutorial == true)
-/////////            texts[2].text = "with tutorial";
-/////////        else
-/////////        {
-/////////            texts[2].text = "without tutorial";
-/////////        }
-/////////
-/////////        InnerScrollViewContent = p.GetComponentInChildren<ContentSizeFitter>().gameObject;
-/////////        for (int j = 0; j < c.puzzles.Count; j++)
-/////////        {
-/////////            var q = Instantiate(puzzleInfoPanelPrefab, InnerScrollViewContent.transform);
-/////////            q.GetComponentInChildren<Text>().text = c.puzzles[j].widthpx + " x " + c.puzzles[j].heigthpx;
-/////////            List<Image> images = new List<Image>();
-/////////            q.GetComponentsInChildren<Image>(images);
-/////////            images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
-/////////        }
-/////////
-/////////        int iForDelegate = i;
-/////////        p.onClick.AddListener(delegate { OnAvailableConfigClick(iForDelegate); });
-/////////        availableConfigInfoButtons.Add(p);
-/////////        Debug.Log("added");
-/////////    }
-/////////}
-
-////////////////public void OnAvailableConfigClick(int buttonIndex)
-////////////////{
-////////////////    Button p = Instantiate(availableConfigInfoButtons[buttonIndex], chosenConfigScrollViewContent.transform);
-////////////////    chosenConfigInfoButtons.Add(p);
-////////////////    chosenConfigs.Add(MenuLogic.instance.availableConfigs.configs[buttonIndex]);
-////////////////    var iForDelegate = chosenConfigInfoButtons.Count - 1;
-////////////////    var buttonIndexD = buttonIndex;
-////////////////    p.onClick.AddListener(delegate { OnChosenConfigClick(p, buttonIndexD); });
-////////////////}
-////////////////public void OnChosenConfigClick(Button b, int configIndex)
-////////////////{
-////////////////    chosenConfigs.Remove(MenuLogic.instance.availableConfigs.configs[configIndex]);
-////////////////    b.gameObject.SetActive(false);
-////////////////    Destroy(b.gameObject);
-////////////////    chosenConfigInfoButtons.Remove(b);
-////////////////}

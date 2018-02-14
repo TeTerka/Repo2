@@ -18,13 +18,13 @@ public class PipePuzzle : AbstractPuzzle
     public Transform startSpot;//misto pro samostatnou trubku s fazi startu
     private List<GameObject> helpPipes = new List<GameObject>();//koncove a pocatecni trubky (neboli ty co se neotaci)
 
-    public List<List<PipeTile>> pipeList = new List<List<PipeTile>>();//public jen kvuli loggeru....to se musi zmenit!!!!!!!!staci get
+    public List<List<PipeTile>> PipeList { get; private set; }
     private bool pathFound = false;
 
     [Header("button on the table")]
     public GameObject buttonPrefab;
     public Transform buttonSpot;
-    public GameObject button;//public jen kvuli loggeru!!!!!!!!!!!!!!!!!!!!!!!!staci get
+    public GameObject Button { get; private set; }
 
     [Header("model pictures")]
     public Texture2D startPicture;
@@ -34,6 +34,7 @@ public class PipePuzzle : AbstractPuzzle
     private void Start()
     {
         PipeSize = 0.2f;
+        PipeList = new List<List<PipeTile>>();
     }
 
 
@@ -97,14 +98,14 @@ public class PipePuzzle : AbstractPuzzle
     public void BasicFinish()
     {
         //destroy pipes
-        foreach(List<PipeTile> row in pipeList)
+        foreach(List<PipeTile> row in PipeList)
         {
             foreach (PipeTile pipe in row)
             {
                 Destroy(pipe.gameObject);
             }
         }
-        pipeList.Clear();
+        PipeList.Clear();
 
         //destroy "help" pipes (=start tube, end tube atd.)
         foreach (GameObject p in helpPipes)
@@ -119,15 +120,15 @@ public class PipePuzzle : AbstractPuzzle
     public override void FinishConfig()
     {
         //destroy the button
-        if(button!=null)
-            Destroy(button);
-        button = null;
+        if(Button!=null)
+            Destroy(Button);
+        Button = null;
     }
     
     public override void StartConfig(Configuration c)
     {
         //instantiate the button
-        button = Instantiate(buttonPrefab, buttonSpot);
+        Button = Instantiate(buttonPrefab, buttonSpot);
     }
     
     public override void StartPhase()
@@ -300,32 +301,34 @@ public class PipePuzzle : AbstractPuzzle
 
     private bool CheckComplete(int h, int w)//zjisti jestli existuje cesta ze startu do cile a jestli v ni nejsou diry (pokud jsou, spusti tam particle systemy(vodu))
     {
-        //setup
-        foreach (List<PipeTile> item in pipeList)
+        //setup - vyrob si pole boolu stejne velke jako mam pole trubek (pipeList) plne false
+        List<List<bool>> seen = new List<List<bool>>();
+        for (int i = 0; i < PipeList.Count; i++)
         {
-            foreach (PipeTile p in item)
+            seen.Add(new List<bool>());
+            for (int j = 0; j< PipeList[i].Count;j++)
             {
-                p.seen = false;
+                seen[i].Add(false);
             }
         }
 
         bool ret = true;
 
         //special tiles
-        if (pipeList[h - 1][w - 1].right == false)//sedi pocatecni dilek
+        if (PipeList[h - 1][w - 1].right == false)//sedi pocatecni dilek
         {
             helpPipes[helpPipes.Count - 1].gameObject.GetComponentInChildren<ParticleSystem>().Play();
             return false;//pokud nesedi prvni dilek, neni treba nic vic kontrolovat
         }
-        if(pipeList[0][0].left == false)//sedi koncovy dilek
+        if(PipeList[0][0].left == false)//sedi koncovy dilek
         {
             ret = false;
         }
 
         //provede upravene bfs
         Queue<PipeTile> qu = new Queue<PipeTile>();
-        qu.Enqueue(pipeList[h - 1][w - 1]);
-        pipeList[h - 1][w - 1].seen = true;
+        qu.Enqueue(PipeList[h - 1][w - 1]);
+        seen[h - 1][w - 1] = true;
         while (qu.Count != 0)
         {
             PipeTile p = qu.Dequeue();
@@ -333,12 +336,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.I + 1 < h)
                 {
-                    if (pipeList[p.I + 1][p.J].down)//tedy pokud ma korektniho horniho souseda...
+                    if (PipeList[p.I + 1][p.J].down)//tedy pokud ma korektniho horniho souseda...
                     {
-                        if (pipeList[p.I + 1][p.J].seen == false)//... ktereho jsme jeste nenavstivili
+                        if (seen[p.I + 1][p.J] == false)//... ktereho jsme jeste nenavstivili
                         {
-                            pipeList[p.I + 1][p.J].seen = true;//navstivme ho
-                            qu.Enqueue(pipeList[p.I + 1][p.J]);//a poznamenejme si, ze chceme pak prozkoumat jeste i jeho sousedy
+                            seen[p.I + 1][p.J] = true;//navstivme ho
+                            qu.Enqueue(PipeList[p.I + 1][p.J]);//a poznamenejme si, ze chceme pak prozkoumat jeste i jeho sousedy
                         }
                     }
                     else
@@ -359,12 +362,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.J + 1 < w)
                 {
-                    if (pipeList[p.I][p.J + 1].left)//tedy pokud ma korektniho praveho souseda
+                    if (PipeList[p.I][p.J + 1].left)//tedy pokud ma korektniho praveho souseda
                     {
-                        if (pipeList[p.I][p.J + 1].seen == false)
+                        if (seen[p.I][p.J + 1] == false)
                         {
-                            pipeList[p.I][p.J + 1].seen = true;
-                            qu.Enqueue(pipeList[p.I][p.J + 1]);
+                            seen[p.I][p.J + 1] = true;
+                            qu.Enqueue(PipeList[p.I][p.J + 1]);
                         }
                     }
                     else
@@ -385,12 +388,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.I - 1 >= 0)
                 {
-                    if (pipeList[p.I - 1][p.J].up)//tedy pokud ma korektniho dolniho souseda
+                    if (PipeList[p.I - 1][p.J].up)//tedy pokud ma korektniho dolniho souseda
                     {
-                        if (pipeList[p.I - 1][p.J].seen == false)
+                        if (seen[p.I - 1][p.J] == false)
                         {
-                            pipeList[p.I - 1][p.J].seen = true;
-                            qu.Enqueue(pipeList[p.I - 1][p.J]);
+                            seen[p.I - 1][p.J] = true;
+                            qu.Enqueue(PipeList[p.I - 1][p.J]);
                         }
                     }
                     else
@@ -411,12 +414,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.J - 1 >= 0)
                 {
-                    if (pipeList[p.I][p.J - 1].right)//tedy pokud ma korektniho leveho souseda
+                    if (PipeList[p.I][p.J - 1].right)//tedy pokud ma korektniho leveho souseda
                     {
-                        if (pipeList[p.I][p.J - 1].seen == false)
+                        if (seen[p.I][p.J - 1] == false)
                         {
-                            pipeList[p.I][p.J - 1].seen = true;
-                            qu.Enqueue(pipeList[p.I][p.J - 1]);
+                            seen[p.I][p.J - 1] = true;
+                            qu.Enqueue(PipeList[p.I][p.J - 1]);
                         }
                     }
                     else
@@ -440,7 +443,7 @@ public class PipePuzzle : AbstractPuzzle
 
     private void GeneratePipes(int h, int w)
     {
-        //vsude ti je nejake +-0.5, avsak nevim, je-li to spravne....!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //vsude ti je nejake +-0.5, avsak nevim, je-li to spravne....
     
         //umisti sparavne containersHolder
         pipesHolder.transform.position = new Vector3(center.transform.position.x - ((w * (PipeSize - 0.05f)) / 2) + ((PipeSize - 0.05f) / 2), center.transform.position.y+0.05f, center.transform.position.z - ((h * (PipeSize - 0.05f)) / 2) + ((PipeSize - 0.05f) / 2));
@@ -449,7 +452,7 @@ public class PipePuzzle : AbstractPuzzle
         GameObject cc = Instantiate(endTubePrefab);
         cc.transform.SetParent(pipesHolder.transform);
         cc.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
-        cc.transform.localPosition = new Vector3(2 * (PipeSize - 0.05f), -0.022f, 0 * (PipeSize - 0.05f));//fuj -0.022 napevno......!!!!!!!!!!!!!!!!
+        cc.transform.localPosition = new Vector3(2 * (PipeSize - 0.05f), -0.022f, 0 * (PipeSize - 0.05f));//fuj -0.022 napevno......
         helpPipes.Add(cc);
 
         //fancy end tube (not neccessary but has a nice valve)
@@ -462,7 +465,7 @@ public class PipePuzzle : AbstractPuzzle
         //other tubes
         for (int i = 0; i < h; i++)
         {
-            pipeList.Add(new List<PipeTile>());
+            PipeList.Add(new List<PipeTile>());
             for (int j = 0; j < w; j++)
             {
                 //zjisti co vlastne chces instanciovat (lisi se podle toho, jestli jde o tutorial, nebo normalni fazi)
@@ -488,7 +491,7 @@ public class PipePuzzle : AbstractPuzzle
                 PipeTile pt;
                 if ((pt = c.GetComponent<PipeTile>()) == null)
                     c.gameObject.AddComponent<PipeTile>();
-                pipeList[i].Add(pt);
+                PipeList[i].Add(pt);
                 pt.Initialize(i, j);
             }
         }

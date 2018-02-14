@@ -6,6 +6,8 @@ using System.IO;
 
 public class NewManager : MonoBehaviour {
 
+    public bool Switching { get; private set; }
+    
     //sigleton stuff
     public static NewManager instance;
 
@@ -223,7 +225,7 @@ public class NewManager : MonoBehaviour {
         //prepare npc
         if(c.withNPC)
         {
-            //search for the chosen model anf behavior (by name), then call CreateCharacter
+            //search for the chosen model and behavior (by name), then call CreateCharacter
             NpcModel nm = null;
             foreach (NpcModel model in npcModels)
             {
@@ -259,7 +261,6 @@ public class NewManager : MonoBehaviour {
 
     private void FinishCurrentConfig()//can be called only after current phase was correctly finished
     {
-        //tady by se to mozna melo zeptat, jestli opravdu chci prepnout na jinou konfiguraci.....
 
         CurrentPuzzle.FinishConfig();
 
@@ -318,15 +319,12 @@ public class NewManager : MonoBehaviour {
         if ((!InTestMode)&&(!InReplayMode))
         {
             string dataToSave;
-            if (!PhaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat?
+            if (!PhaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat? (ulozi se to, ale misto casu a score tam bude "invalid")
             {
-                Debug.Log("Ended too soon!!! The player did not finish, I should not save this data!!!");
-                dataToSave = idInuput.text + ",invalid";
+                dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + "invalid" + "," + "invalid";
             }
             else
             {
-                Debug.Log("data saved");
-
                 //save data (ve tvaru: id,config,puzzle,w,h,time left,score)
                 if (timeLeft <= 0)//pokud skoncil protoze mu dosel cas
                 {
@@ -337,17 +335,26 @@ public class NewManager : MonoBehaviour {
                     dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
                 }
             }
-            if (File.Exists(activeExperiment.resultsFile))
+            try
             {
-                using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))//true for append
+                if (File.Exists(activeExperiment.resultsFile))
                 {
-                    sw.WriteLine(dataToSave);
-                    sw.Close();
+                    using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))//true for append
+                    {
+                        sw.WriteLine(dataToSave);
+                        sw.Close();
+                    }
+                }
+                else
+                {
+                    //Debug.Log("error, missing results file!!!");
+                    ErrorCatcher.instance.Show("Wanted to write a line to results but the file " + activeExperiment.resultsFile + " does not exist.");
+                    //tady by se melo vsechno nejak pauznout, vypnout....
                 }
             }
-            else
+            catch(System.Exception e)
             {
-                Debug.Log("error, missing results file!!!");
+                ErrorCatcher.instance.Show("Wanted to write a line to results to file " + activeExperiment.resultsFile + " but it threw error "+e.ToString());
             }
         }
 
@@ -397,7 +404,6 @@ public class NewManager : MonoBehaviour {
 
         if(InReplayMode)//****************
         {
-            Debug.Log("started");
             StartCoroutine(SwitchPhase());
         }
     }
@@ -407,21 +413,28 @@ public class NewManager : MonoBehaviour {
         //***************logging*********************************
         if ((!InReplayMode)&&(!InTestMode)&&(idInuput.text!=""))
         {
-            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + idInuput.text + ".mylog";
-            var f = File.Create(newPath); f.Close();//urcite takovy jeste neexistuje, protoze je zajisteno, ze id jsou v ramci jednoho experimentu unikatni
-            using (StreamWriter sw = new StreamWriter(newPath, true))
+            //tady by mohlo vadit, kdyby se dve konfigurace jmenovaly stejne!!!!!!!!!!!!!!!!!!!!!
+            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + ActiveConfig.name + "_" + idInuput.text + ".mylog";
+            try
             {
-                sw.WriteLine(ActiveConfig.name);
-                sw.WriteLine(idInuput.text);
-                sw.WriteLine(Time.time);
-                sw.Close();
+                var f = File.Create(newPath); f.Close();//urcite takovy jeste neexistuje, protoze je zajisteno, ze id jsou v ramci jednoho experimentu unikatni
+                using (StreamWriter sw = new StreamWriter(newPath, true))
+                {
+                    sw.WriteLine(ActiveConfig.name);
+                    sw.WriteLine(idInuput.text);
+                    sw.WriteLine(Time.time);
+                    sw.Close();
+                }
+            }
+            catch(System.Exception e)
+            {
+                ErrorCatcher.instance.Show("Wanted to create new logfile " + activeExperiment.resultsFile + " but it threw error " + e.ToString());
             }
             Logger.instance.SetLoggerPath(newPath);
         }
 
         if(InReplayMode)
         {
-            Debug.Log("started reading");
             Logger.instance.ReadLog();//zacni prehravat
         }
         //*******************************************************
@@ -509,8 +522,9 @@ public class NewManager : MonoBehaviour {
     }
 
     //mezi fazemi chvilku cekat....hlavne na konci main phase, aby mohl v klidu sundat headset...
-    public IEnumerator SwitchPhase()//(public jen kvuli loggeru)
+    private IEnumerator SwitchPhase()//(public jen kvuli loggeru)
     {
+        Switching = true;
         phaseLoadingPanel.SetActive(true);//zamezi koordinatorovi na cokoliv klikat v prubehu prepinani faze
                                           //ani hrac v teto dobe nemuze nic pokazit, protoze OnCubePlaced pripadne otoceni trubky probehne jen pokud neni phaseFinished
                                           //a sebranim krychle se nic nezkazi (respawnuji se i z ruky)....a nic dalsiho uz hrac delat neumi, takze ok
@@ -583,6 +597,7 @@ public class NewManager : MonoBehaviour {
             }
         }
         phaseLoadingPanel.SetActive(false);//=>koordinator zase muze volne klikat
+        Switching = false;
     }
 
     //********************************************** POMOCNE FUNKCE ***************************************************************************
@@ -737,4 +752,12 @@ public class NpcBeahviour
 {
     public string bahaviourName;
     public RuntimeAnimatorController behaviourAnimController;
+}
+
+[System.Serializable]
+public class Sentence//pro WelcomeSpeechBehaviour
+{
+    public string text;//veta
+    public bool replaceAlex;//if true, nahradi vyskyty "Alex" ve vete jmenem aktualne vybraneho NPC
+    public AudioClip audio;//optional, pouzije se pouze pokud celkove bude useSound==true v tom konretnim behaviouru
 }

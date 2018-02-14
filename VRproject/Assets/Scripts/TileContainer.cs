@@ -6,7 +6,7 @@
 public class TileContainer : MonoBehaviour {
 
     //charakteristika
-    private int containerIndex;    //cislovani krychli/mrizky je od leveho dolniho rohu, napr. takto(pro rozlozeni 3x5):
+    public int ContainerIndex { get; private set; }//cislovani krychli/mrizky je od leveho dolniho rohu, napr. takto(pro rozlozeni 3x5):
     // ---------------------
     // |10 |11 |12 |13 |14 |
     // ---------------------
@@ -40,7 +40,7 @@ public class TileContainer : MonoBehaviour {
 
     public void Initialize(int index)//tahle funkce se vola pri vytvareni kontajneru (aby se nepsalo primo containerIndex = k;)
     {
-        containerIndex = index;
+        ContainerIndex = index;
     }
 
     public void Highlight()
@@ -63,7 +63,7 @@ public class TileContainer : MonoBehaviour {
 
     private bool CheckIndex(int tileIndex)//spravna pozice?
     {
-        return tileIndex == containerIndex;
+        return tileIndex == ContainerIndex;
     }
     private bool CheckFace(Transform cube, int n)//sparavnou stenou nahoru?
     {

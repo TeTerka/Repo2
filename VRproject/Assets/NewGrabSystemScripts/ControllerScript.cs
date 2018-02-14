@@ -4,6 +4,8 @@
 
 public class ControllerScript : MonoBehaviour {
 
+    public bool isLeft;//kvuli loggeru, aby vedel ktera ruka tu kostku drzi
+
     public bool isFake;//oznaceni ze tento controller je jen testovaci 
     public Transform fingerTip;//koule kam "dosahne" controller
 
@@ -42,10 +44,10 @@ public class ControllerScript : MonoBehaviour {
 
     void Update()
     {
-        if(NewManager.instance.InReplayMode)//****************
-        {
-            return;
-        }
+        ////////////////if(NewManager.instance.InReplayMode)//****************
+        ////////////////{
+        ////////////////    return;
+        ////////////////}
 
         //check input for trigger up/down
         if (!isFake)
@@ -103,7 +105,7 @@ public class ControllerScript : MonoBehaviour {
                 return;
             }
 
-            if(obj.CompareTag("PipeTile"))
+            if(obj.CompareTag("PipeTile"))//mohlo by tu napred byt neco jako RotatableObject, ale ted to neni treba...
             {
                 obj.GetComponent<PipeTile>().OnTriggerPressed(this);
                 return;

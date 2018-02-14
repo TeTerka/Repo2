@@ -17,7 +17,7 @@ public class ButtonScript : MonoBehaviour
         //klikne pokud se ho dotkne collider ovladace
         if (other.CompareTag("Controller")&&(!NewManager.instance.InReplayMode))
         {
-            if (!isClicking)
+            if ((!isClicking) && (!NewManager.instance.Switching))//!switching aby se na tlacitko nedalo klikat v dobe mezi dvema fazemi
             {
                 StartCoroutine(Click());
             }
@@ -28,7 +28,7 @@ public class ButtonScript : MonoBehaviour
     {
         isClicking = true;
         animator.SetTrigger("Click");
-        yield return new WaitForSeconds(0.5f);//+mozna play sound...
+        //yield return new WaitForSeconds(0.5f);//+mozna play sound...
         ClickEffect();
         yield return new WaitForSeconds(1f);
         isClicking = false;
