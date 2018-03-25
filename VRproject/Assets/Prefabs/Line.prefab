@@ -25,7 +25,7 @@ GameObject:
   - component: {fileID: 114770270055077512}
   m_Layer: 0
   m_Name: Line
-  m_TagString: PipeTile
+  m_TagString: InteractibleObject
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -175,9 +175,6 @@ MonoBehaviour:
   particleRight: {fileID: 0}
   particleDown: {fileID: 198351885228527142}
   particleLeft: {fileID: 0}
-  i: 0
-  j: 0
-  seen: 0
 --- !u!198 &198232790824415846
 ParticleSystem:
   m_ObjectHideFlags: 1

@@ -2,8 +2,9 @@
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
 
-//umoznuje rozlisit leve a prave kliknuti na button
-
+/// <summary>
+/// allows to distinguish right and left mouse button click on a button
+/// </summary>
 public class RightClick : MonoBehaviour, IPointerClickHandler 
 {
     public UnityEvent leftClick;

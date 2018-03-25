@@ -2,9 +2,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-//allows talking during an animation state
-//(just put this script on the state and fill the list of sentences)
 
+/// <summary>
+/// allows talking of the npc during an animation state
+/// </summary>
 public class WelcomeSpeechBehaviour : StateMachineBehaviour {
 
     private GameObject subtitlesCanvas;
@@ -14,12 +15,9 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
     private string npcName;
     private AudioSource mouth;
 
-    //////public bool replaceName;//ehm, to pak bude jinak
     public int timeForASentence;
     public List<Sentence> sentences = new List<Sentence>();
     public bool useSound;
-    /////public List<AudioClip> audioClips = new List<AudioClip>();
-    //pozn.: oba listy musi mit stejnou delku!!
 
     NewManager mngr;
 
@@ -28,17 +26,6 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
         mngr = GameObject.Find("NewManager").GetComponent<NewManager>();
         subtitlesCanvas = mngr.subtitlesCanvas;
         subtitleText = subtitlesCanvas.GetComponentInChildren<Text>();
-
-        //if (useSound)//ale tohle je taky jeste null!!!!!!!!!!
-        //{
-        //    mouth = mngr.theNpc.GetComponent<AudioSource>();
-        //    if(mouth==null)
-        //    {
-        //        useSound = false;
-        //        Debug.Log("error, no AudioSpoource found on the NPC");
-        //    }
-        //}
-        //npcName = mngr.npcName;//ehm, touhle dobou je to jeste null...
     }
 
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -49,7 +36,7 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
 
         //display first sentence
         npcName = mngr.npcName;
-        if (sentences[0].replaceAlex)//******
+        if (sentences[0].replaceAlex)
         {
             subtitleText.text = sentences[0].text.Replace("Alex", npcName);
         }
@@ -57,21 +44,29 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
         {
             subtitleText.text = sentences[0].text;
         }
-        //start the countdown
+        //manage sound
         if (useSound)
         {
             mouth = mngr.theNpc.GetComponent<AudioSource>();
             if (mouth == null)
             {
                 useSound = false;
-                Debug.Log("error, no AudioSource found on the NPC");
+                ErrorCatcher.instance.Show("error, no AudioSource found on the NPC");
             }
             mouth.clip = sentences[0].audio;
+            if(mouth.clip==null)
+            {
+                useSound = false;
+                ErrorCatcher.instance.Show("error, audio clip found in sentences[0]");
+            }
             mouth.Play();
         }
+        //start the countdown
         time = 0;
         i = 1;
     }
+
+
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo animatorStateInfo, int layerIndex)
     {
         //update the countdown, display apropriate sentence
@@ -84,12 +79,17 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
                 if (mouth == null)
                 {
                     useSound = false;
-                    Debug.Log("error, no AudioSource found on the NPC");
+                    ErrorCatcher.instance.Show("error, no AudioSource found on the NPC");
                 }
                 mouth.clip = sentences[i].audio;
+                if (mouth.clip == null)
+                {
+                    useSound = false;
+                    ErrorCatcher.instance.Show("error, audio clip found in sentences["+i+"]");
+                }
                 mouth.Play();
             }
-            if (sentences[i].replaceAlex)//******
+            if (sentences[i].replaceAlex)
             {
                 subtitleText.text = sentences[i].text.Replace("Alex", npcName);
             }
@@ -102,9 +102,10 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
         }
     }
 
+
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        //pokud se jeste pred koncem tohoto stavu nekdo jiny zapsal ze bude pouzivat titulky, tak subtitlesCanvas nechci znicit
+        //disable the subtitle canvas (but only if nobody declared he needs it - because of state blending OnStateExit of old state happens AFTER OnStateEnter of the next state)
         if (mngr.whoWantsSubtitles == -1 || mngr.whoWantsSubtitles == stateInfo.shortNameHash)
         {
             subtitlesCanvas.SetActive(false);

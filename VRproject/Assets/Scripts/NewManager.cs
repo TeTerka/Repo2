@@ -4,43 +4,43 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 
-public class NewManager : MonoBehaviour {
 
-    public bool Switching { get; private set; }
+/// <summary>
+/// the main class for managing the running experiment
+/// </summary>
+public class NewManager : MonoBehaviour {
     
     //sigleton stuff
     public static NewManager instance;
 
     [Header("puzzle types")]
-    public AbstractPuzzle cubePuzzle;
-    public AbstractPuzzle pipePuzzle;
+    public List<AbstractPuzzle> puzzleTypes = new List<AbstractPuzzle>();
 
-    //info o stavu
-    public AbstractPuzzle CurrentPuzzle { get; private set; }
 
+    //information about current state
     private Experiment activeExperiment = null;
+    public AbstractPuzzle CurrentPuzzle { get; private set; }
     public Configuration ActiveConfig { get; private set; }
     public int ActivePuzzleIndex { get; private set; }
     public bool InStart { get; private set; }
     public bool InTut { get; private set; }
     public bool PhaseFinished { get; private set; }
-
     public bool InTestMode { get; private set; }
     public bool InReplayMode { get; private set; }
+    public bool Switching { get; private set; }
 
     [Header("model picture")]
     public Renderer modelPictureFrame;
     public Transform imageHolder;
 
-    //room scale stuff
     [Header("room scale stuff")]
     public Transform level;
     public Transform cameraRigPoint;
     public Transform editorFloorScale;
     private Vector3 originalScale = new Vector3();
 
-    //odpocet a score
     [Header("referencies to UI")]
+    public UImanagerScript UImangr;
     public Text timerText;
     private float timeLeft; //in seconds
     private bool countingDown = false;
@@ -48,7 +48,7 @@ public class NewManager : MonoBehaviour {
     private int skore;
 
     //next button
-    public Button nextButton;//the NEXT button will be hihghlighted when curret phase is finished
+    public Button nextButton;
     private Color highlightColor = Color.green;
     private Color normalColor = Color.white;
 
@@ -62,7 +62,7 @@ public class NewManager : MonoBehaviour {
     public Text expNameText;
     public Button pauseButton;
 
-    //scrollview ui
+    //scrollview UI
     public GameObject phaseScrollContent;
     public GameObject configScrollContent;
     public GameObject namePlatePrefab;
@@ -73,18 +73,19 @@ public class NewManager : MonoBehaviour {
     [Header("for changing NPC models and behaviours")]
     public GameObject theNpc;
     public Transform npcPoint;
-    public List<NpcModel> npcModels = new List<NpcModel>();//vsechny musi mit komponentu Animator!
+    public List<NpcModel> npcModels = new List<NpcModel>();
     public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
 
-    [Header("Animation stuff")]//pouziva to WelcomeSpeechBehaviour...
+    [Header("for talking during animation")]
     public string npcName = "";
     public GameObject subtitlesCanvas;
     public int whoWantsSubtitles = -1;
 
-    public UImanagerScript UImangr;
 
+    //--------------------------------------------------------------------------------------------------------------------------
+    // INITIALIZATION
+    //--------------------------------------------------------------------------------------------------------------------------
 
-    //***********************************************THE VERY BEGINNING********************************************************************
     private void Awake()
     {
         //singleton stuff
@@ -97,27 +98,28 @@ public class NewManager : MonoBehaviour {
         //prepare room
         ScaleRoomToFitPlayArea();
 
-        //inicializace
+        //inicialize
         modelPictureFrame.material.mainTexture = null;
         modelPictureFrame.material.color = Color.white;
         InTestMode = false;
         InReplayMode = false;
     }
 
-    private void ScaleRoomToFitPlayArea()//scale the virtual room so that it is the same size as the real room
+    /// <summary>
+    /// scale the virtual room so that it is the same size as the real room
+    /// </summary>
+    private void ScaleRoomToFitPlayArea()
     {
         //get info from play area
         Valve.VR.HmdQuad_t rect = new Valve.VR.HmdQuad_t();
-
-        //tady to chce nejaky wait, aby se rozmery mistnosti stihly nacist....muze to chvilku trvat..
         while (!SteamVR_PlayArea.GetBounds(SteamVR_PlayArea.Size.Calibrated, ref rect))
         {
             System.Threading.Thread.Sleep(1000);
         }
 
         //count new scale
-        float floorScaleFactorX = editorFloorScale.localScale.x;//sirka podlahy v editoru
-        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//delka podlahy v editoru kam dosahuje camera rig        
+        float floorScaleFactorX = editorFloorScale.localScale.x;
+        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//only half of the room is for the player       
         Vector3 newScale = new Vector3(Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0)/ floorScaleFactorX, 1,Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2)/ floorScaleFactorZ);
         //scale the room
         level.localScale = newScale;
@@ -127,32 +129,48 @@ public class NewManager : MonoBehaviour {
         originalScale = imageHolder.localScale;
 
         //adjust scale to objects which should keep original size
-        foreach (Transform x in cubePuzzle.nonScalables)
+        foreach (AbstractPuzzle puzzleType in puzzleTypes)
         {
-            x.localScale = new Vector3(1 / x.lossyScale.x, 1, 1 / x.lossyScale.z);
-        }
-
-        foreach (Transform x in pipePuzzle.nonScalables)
-        {
-            x.localScale = new Vector3(1 / x.lossyScale.x, 1, 1 / x.lossyScale.z);
+            foreach (Transform x in puzzleType.nonScalables)
+            {
+                x.localScale = new Vector3(1 / x.lossyScale.x, 1, 1 / x.lossyScale.z);
+            }
         }
     }
 
-    //************************************** STARTING & FINISHING EXPERIMENTS & CONFIGURATIONS *****************************************************
 
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // STARTING & FINISHING EXPERIMENTS & CONFIGURATIONS
+    //--------------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// start experiement <paramref name="e"/> in selected mode
+    /// </summary>
+    /// <param name="e">starting experiment</param>
+    /// <param name="justTesting">true = test mode (no data seving)</param>
+    /// <param name="justReplay">true = replay mode (replaying from a logfile)</param>
     public void StartExperiment(Experiment e,bool justTesting,bool justReplay)
     {
         InTestMode = justTesting;
         testModeHighlight.SetActive(InTestMode);
-        InReplayMode = justReplay;//*****************************
-
+        InReplayMode = justReplay;
         activeExperiment = e;
         expNameText.text = e.name;
-        //decide which puzzle is being used
-        if (e.puzzleType == "CubePuzzle")
-            CurrentPuzzle = cubePuzzle;
-        if (e.puzzleType == "PipePuzzle")
-            CurrentPuzzle = pipePuzzle;
+
+        //decide which puzzle type is being used
+        CurrentPuzzle = null;
+        foreach (AbstractPuzzle puzzleType in puzzleTypes)
+        {
+            if (puzzleType.typeName == e.puzzleType)
+                CurrentPuzzle = puzzleType;
+        }
+
+        if(CurrentPuzzle = null)
+        {
+            ErrorCatcher.instance.Show("Error, puzzle type "+e.puzzleType+" is not available.");
+        }
+
         //fill out the configs scrollview
         for (int i = 0; i < e.configs.Count; i++)
         {
@@ -163,8 +181,7 @@ public class NewManager : MonoBehaviour {
             p.onClick.AddListener(delegate { if (InStart) { FinishStartPhase(); FinishCurrentConfig(); StartConfig(e.configs[iForDelegate]); } });
         }
 
-        //*******************
-        if(InReplayMode)//deaktivuj nezadouci ovladaci prvky
+        if(InReplayMode)
         {
             SetControlsInteractible(false);
         }
@@ -172,11 +189,15 @@ public class NewManager : MonoBehaviour {
         {
             SetControlsInteractible(true);
         }
-        //*******************
 
-        //start the first configuration (obviously every experiment must have at least one)
+        //start the first configuration (every experiment certainly has at least one)
         StartConfig(e.configs[0]);
     }
+
+    /// <summary>
+    /// enables or disbles controls that should not be used during replay mode
+    /// </summary>
+    /// <param name="b">true = enable, false = disable</param>
     private void SetControlsInteractible(bool b)
     {
         nextButton.interactable = b;
@@ -188,23 +209,30 @@ public class NewManager : MonoBehaviour {
         pauseButton.interactable = !b;
     }
 
-    private void FinishExperiment()//should be called only after current configuration was correctly finished
+    /// <summary>
+    /// ends current experiment
+    /// </summary>
+    /// <remarks>should be called only after current configuration was correctly finished</remarks>
+    private void FinishExperiment()
     {
-        //clear the configButtons
         for (int i = configButtons.Count - 1; i >= 0; i--)
         {
             Destroy(configButtons[i].gameObject);
             configButtons.RemoveAt(i);
         }
-        //...anything else?
         activeExperiment = null;
         expNameText.text = "";
         CurrentPuzzle = null;
     }
 
+    /// <summary>
+    /// starts new configuration <paramref name="c"/>
+    /// </summary>
+    /// <param name="c">starting configuration</param>
     private void StartConfig(Configuration c)
     {
         ActiveConfig = c;
+
         //fill out the phase scrollview
         var p = Instantiate(namePlatePrefab, phaseScrollContent.transform);
         p.GetComponentInChildren<Text>().text = "start phase";
@@ -225,7 +253,6 @@ public class NewManager : MonoBehaviour {
         //prepare npc
         if(c.withNPC)
         {
-            //search for the chosen model and behavior (by name), then call CreateCharacter
             NpcModel nm = null;
             foreach (NpcModel model in npcModels)
             {
@@ -254,17 +281,23 @@ public class NewManager : MonoBehaviour {
             theNpc = null;
         }
 
+        //puzzle specific actions
         CurrentPuzzle.StartConfig(c);
-        originalScale = imageHolder.localScale;//urcite....??
+
+        originalScale = imageHolder.localScale;
         StartStart();
     }
 
-    private void FinishCurrentConfig()//can be called only after current phase was correctly finished
+    /// <summary>
+    /// ends current configuration
+    /// </summary>
+    /// <remarks>should be called only after current phase was correctly finished</remarks>
+    private void FinishCurrentConfig()
     {
-
+        //puzzle specific actions
         CurrentPuzzle.FinishConfig();
 
-        //clear the phase scrollview...
+        //clear the phase scrollview
         for (int i = phaseLabels.Count - 1; i >= 0; i--)
         {
             Destroy(phaseLabels[i]);
@@ -277,69 +310,202 @@ public class NewManager : MonoBehaviour {
         idInuput.text = "";
     }
 
-    //********************************************************* PHASES **********************************************************************
 
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // PHASES
+    //--------------------------------------------------------------------------------------------------------------------------
+
+
+
+    /// <summary>
+    /// starts the start phase
+    /// </summary>
+    private void StartStart()
+    {
+        //logging
+        if (!InReplayMode)
+        {
+            Logger.instance.SetLoggerPath(null);
+        }
+
+        //general preparations
+        InStart = true;
+        phaseLabels[0].GetComponent<Image>().color = highlightColor;
+        nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
+
+        //puzzle specific preparation
+        CurrentPuzzle.StartStart();
+
+        if (!InReplayMode)
+        {
+            //make it possible to switch to different configurations
+            foreach (var item in configButtons)
+            {
+                item.interactable = true;
+            }
+            //and to change player id
+            playeridInputField.interactable = true;
+        }
+
+        //animation of the NPC
+        if (theNpc != null)
+        {
+            theNpc.GetComponent<Animator>().SetTrigger("StartStart");
+        }
+
+        if (InReplayMode)
+        {
+            StartCoroutine(SwitchPhase());
+        }
+    }
+
+    private void FinishStartPhase()
+    {
+        //logging - creating a new logfile
+        if ((!InReplayMode) && (!InTestMode) && (idInuput.text != ""))
+        {
+            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + ActiveConfig.name + "_" + idInuput.text + ".mylog";
+            try
+            {
+                var f = File.Create(newPath); f.Close();
+                using (StreamWriter sw = new StreamWriter(newPath, true))
+                {
+                    sw.WriteLine(ActiveConfig.name);
+                    sw.WriteLine(idInuput.text);
+                    sw.WriteLine(Time.time);
+                    sw.Close();
+                }
+            }
+            catch (System.Exception e)
+            {
+                ErrorCatcher.instance.Show("Wanted to create new logfile " + activeExperiment.resultsFile + " but it threw error " + e.ToString());
+            }
+            Logger.instance.SetLoggerPath(newPath);
+        }
+        if (InReplayMode)
+        {
+            Logger.instance.ReadLog();
+        }
+        
+        //disable the option to switch to different configuration
+        foreach (var item in configButtons)
+        {
+            item.interactable = false;
+        }
+
+        //puzzle specific actions
+        CurrentPuzzle.EndStart();
+
+        //general actions
+        BasicFinish();
+        phaseLabels[0].GetComponent<Image>().color = normalColor;
+        InStart = false;
+
+    }
+
+
+    /// <summary>
+    /// starts tutorial phase
+    /// </summary>
+    private void StartTutorial()
+    {
+        //general preparations
+        InTut = true;
+        phaseLabels[1].GetComponent<Image>().color = highlightColor;
+
+        //puzzle specific preparations
+        CurrentPuzzle.StartTut();
+
+        //animation of the NPC
+        if (theNpc != null)
+        {
+            theNpc.GetComponent<Animator>().SetTrigger("StartTutorial");
+        }
+    }
+
+    /// <summary>
+    /// end tutorial phase
+    /// </summary>
+    private void FinishTutorial()
+    {
+        phaseLabels[1].GetComponent<Image>().color = normalColor;
+        InTut = false;
+        CurrentPuzzle.EndTut();
+        BasicFinish();
+    }
+
+    /// <summary>
+    /// starts a regular phase (a phase containing a puzzle)
+    /// </summary>
     private void PhaseStart()
     {
         ActivePuzzleIndex++;
         //visualise current phase
         if (ActiveConfig.withTutorial)
         {
-            phaseLabels[ActivePuzzleIndex + 2].GetComponent<Image>().color = Color.green;
+            phaseLabels[ActivePuzzleIndex + 2].GetComponent<Image>().color = highlightColor;
         }
         else
         {
-            phaseLabels[ActivePuzzleIndex + 1].GetComponent<Image>().color = Color.green;
+            phaseLabels[ActivePuzzleIndex + 1].GetComponent<Image>().color = highlightColor; 
         }
 
+        //puzzle specific actions
         CurrentPuzzle.StartPhase();
 
         //start timer
         timeLeft = ActiveConfig.timeLimit;
         countingDown = true;
 
-        //dale by melo spustit spravnou animaci
+        //play PuzzleStart animation
         if(theNpc!=null)
             theNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
 
     }
+
+    /// <summary>
+    /// finishes a regular phase (a phase containing a puzzle)
+    /// </summary>
     private void PhaseFinish()
     {
         //cancel phase label highlight
         if (ActiveConfig.withTutorial)
         {
-            phaseLabels[ActivePuzzleIndex + 2].GetComponent<Image>().color = Color.white;
+            phaseLabels[ActivePuzzleIndex + 2].GetComponent<Image>().color = normalColor;
         }
         else
         {
-            phaseLabels[ActivePuzzleIndex + 1].GetComponent<Image>().color = Color.white;
+            phaseLabels[ActivePuzzleIndex + 1].GetComponent<Image>().color = normalColor;
         }
 
         //check if it should save data
         if ((!InTestMode)&&(!InReplayMode))
         {
             string dataToSave;
-            if (!PhaseFinished)//to se stane kdyz nekdo klikne na Yes v popup Opravdu chcete pokracovat? (ulozi se to, ale misto casu a score tam bude "invalid")
+            Puzzle puzzle = ActiveConfig.puzzles[ActivePuzzleIndex];
+            if (!PhaseFinished)//if this was a forced phase finish, instead of time and score "invalid" will be saved
             {
-                dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + "invalid" + "," + "invalid";
+                dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
             }
             else
             {
-                //save data (ve tvaru: id,config,puzzle,w,h,time left,score)
-                if (timeLeft <= 0)//pokud skoncil protoze mu dosel cas
+                //save data (format: id,config,puzzle,w,h,time left,score)
+                if (timeLeft <= 0)//if ended because time ran out
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + "max" + "," + skore;
+                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "max" + "," + skore;
                 }
-                else//pokud skoncil tim ze dokoncil puzzle
+                else//if ended because puzzle was solved
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].name + "," + ActiveConfig.puzzles[ActivePuzzleIndex].widthpx + "," + ActiveConfig.puzzles[ActivePuzzleIndex].heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
+                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
                 }
             }
             try
             {
                 if (File.Exists(activeExperiment.resultsFile))
                 {
-                    using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))//true for append
+                    using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))
                     {
                         sw.WriteLine(dataToSave);
                         sw.Close();
@@ -347,9 +513,7 @@ public class NewManager : MonoBehaviour {
                 }
                 else
                 {
-                    //Debug.Log("error, missing results file!!!");
                     ErrorCatcher.instance.Show("Wanted to write a line to results but the file " + activeExperiment.resultsFile + " does not exist.");
-                    //tady by se melo vsechno nejak pauznout, vypnout....
                 }
             }
             catch(System.Exception e)
@@ -358,6 +522,7 @@ public class NewManager : MonoBehaviour {
             }
         }
 
+        //finish
         CurrentPuzzle.EndPhase();
         BasicFinish();
 
@@ -367,123 +532,12 @@ public class NewManager : MonoBehaviour {
         timerText.text = "0:00.0";
     }
 
-    public void StartStart()//sets up the start phase
+
+    /// <summary>
+    /// basic stuff done after finishing any kind of phase
+    /// </summary>
+    private void BasicFinish()
     {
-        //**************************************
-        if (!InReplayMode)
-        {
-            Logger.instance.SetLoggerPath(null);
-        }
-        //******************************************
-
-        //general preparations...
-        InStart = true;
-        phaseLabels[0].GetComponent<Image>().color = Color.green;
-        nextButton.GetComponentInChildren<Text>().text = "NEXT PHASE";
-
-        //puzzle specific preparation
-        CurrentPuzzle.StartStart();
-
-        if (!InReplayMode)//pri prehravani nechci zaktivnovat zadne ovladaci prvky krome quit a changeCam buttonu
-        {
-            //make it possible to switch to different configuration
-            foreach (var item in configButtons)
-            {
-                item.interactable = true;
-            }
-            //...and to change id
-            playeridInputField.interactable = true;
-        }
-
-        //animace NPC
-        if (theNpc != null)
-        {
-            theNpc.GetComponent<Animator>().SetTrigger("TabletUp");
-            theNpc.GetComponent<Animator>().SetTrigger("StartStart");
-        }
-
-        if(InReplayMode)//****************
-        {
-            StartCoroutine(SwitchPhase());
-        }
-    }
-
-    public void FinishStartPhase()
-    {
-        //***************logging*********************************
-        if ((!InReplayMode)&&(!InTestMode)&&(idInuput.text!=""))
-        {
-            //tady by mohlo vadit, kdyby se dve konfigurace jmenovaly stejne!!!!!!!!!!!!!!!!!!!!!
-            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + ActiveConfig.name + "_" + idInuput.text + ".mylog";
-            try
-            {
-                var f = File.Create(newPath); f.Close();//urcite takovy jeste neexistuje, protoze je zajisteno, ze id jsou v ramci jednoho experimentu unikatni
-                using (StreamWriter sw = new StreamWriter(newPath, true))
-                {
-                    sw.WriteLine(ActiveConfig.name);
-                    sw.WriteLine(idInuput.text);
-                    sw.WriteLine(Time.time);
-                    sw.Close();
-                }
-            }
-            catch(System.Exception e)
-            {
-                ErrorCatcher.instance.Show("Wanted to create new logfile " + activeExperiment.resultsFile + " but it threw error " + e.ToString());
-            }
-            Logger.instance.SetLoggerPath(newPath);
-        }
-
-        if(InReplayMode)
-        {
-            Logger.instance.ReadLog();//zacni prehravat
-        }
-        //*******************************************************
-
-
-        phaseLabels[0].GetComponent<Image>().color = Color.white;
-        InStart = false;
-
-        //disable the option to switch to different configuration
-        foreach (var item in configButtons)
-        {
-            item.interactable = false;
-        }
-
-        CurrentPuzzle.EndStart();
-
-        BasicFinish();
-
-    }
-
-    public void StartTutorial()//sets up tutorial phase - ADD OPTION TO SELECT YOUR OWN TUTORIAL PICTURE ETC. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    {
-        //general preparations...
-        InTut = true;
-        phaseLabels[1].GetComponent<Image>().color = Color.green;
-
-        CurrentPuzzle.StartTut();
-
-        //animace NPC
-        if (theNpc != null)
-        {
-            theNpc.GetComponent<Animator>().SetTrigger("TabletDown");
-            theNpc.GetComponent<Animator>().SetTrigger("StartWelcomeSpeech");
-        }
-    }
-
-    public void FinishTutorial()
-    {
-        phaseLabels[1].GetComponent<Image>().color = Color.white;
-        InTut = false;
-
-        CurrentPuzzle.EndTut();
-        BasicFinish();
-    }
-
-    public void BasicFinish()
-    {
-        //imageHolder.localScale = originalScale;?
-
         //clear other info
         scoreText.text = "0";
         PhaseFinished = false;
@@ -491,14 +545,24 @@ public class NewManager : MonoBehaviour {
         skore = 0;
     }
 
-    //*****************************************SWITCHING********************************************************
 
+
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // SWITCHING PHASES
+    //--------------------------------------------------------------------------------------------------------------------------
+
+    
+    /// <summary>
+    /// if current phase is marked as finished or <paramref name="skipCondition"/>=true this sitches to next phase, othervise creates a popup panle "Do you really want to skip?"
+    /// </summary>
+    /// <param name="skipCondition">true = do not check if phase is finished, just switch to the next one</param>
     public void TrySwitchPhase(bool skipCondition)
     {
-        //specialne pro welcome phase - kontrola jestli bylo zadano unikatni playerID
-        if (InStart && (!InTestMode)&&(!InReplayMode))
+        if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled and unique
         {
-            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))//je neprazdny a je unikatni
+            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))
             {
                 messageOutput.text = "";
                 playeridInputField.interactable = false;
@@ -510,44 +574,52 @@ public class NewManager : MonoBehaviour {
             }
         }
         //try switch phase
-        if (skipCondition || PhaseFinished)//tady bude kontrola, jestli hrac splnil ukol teto faze, pokud ne, program se zepta, jestli opravdu chceme pokracovat
+        if (skipCondition || PhaseFinished)
         {
             StartCoroutine(SwitchPhase());
         }
         else
         {
-            //popup window
             popupPanel.SetActive(true);
         }
     }
 
-    //mezi fazemi chvilku cekat....hlavne na konci main phase, aby mohl v klidu sundat headset...
-    private IEnumerator SwitchPhase()//(public jen kvuli loggeru)
+
+
+    /// <summary>
+    /// correctly finishes current phase, waits a few seconds and then starts the next phase
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator SwitchPhase()
     {
         Switching = true;
-        phaseLoadingPanel.SetActive(true);//zamezi koordinatorovi na cokoliv klikat v prubehu prepinani faze
-                                          //ani hrac v teto dobe nemuze nic pokazit, protoze OnCubePlaced pripadne otoceni trubky probehne jen pokud neni phaseFinished
-                                          //a sebranim krychle se nic nezkazi (respawnuji se i z ruky)....a nic dalsiho uz hrac delat neumi, takze ok
+        phaseLoadingPanel.SetActive(true);//prevents experimentor from clicking any buttons during the switching
 
+        //logging
         if (!InReplayMode)
-            Logger.instance.Log(Time.time + " Next");//*******logging*****************
+            Logger.instance.Log(Time.time + " Next");
 
-        if (InStart)//if just finished start phase
+        if (InStart)
         {
+            //finish
             if ((!InTestMode)&&(!InReplayMode))
             {
                 activeExperiment.ids.Add(idInuput.text);
             }
             FinishStartPhase();
+
+            //wait
             yield return new WaitForSeconds(1);
+
+            //start next
             if (ActiveConfig.withTutorial)
             {
                 StartTutorial();
             }
             else
             {
-                ActivePuzzleIndex = -1;//od ted zacinaji main puzzly
-                if (ActiveConfig.puzzles.Count == 1)//pokud je v aktualni konfiguraci jen jeden puzzle, je to zaroven posledni puzzle
+                ActivePuzzleIndex = -1;
+                if (ActiveConfig.puzzles.Count == 1)
                 {
                     nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
                 }
@@ -556,12 +628,17 @@ public class NewManager : MonoBehaviour {
         }
         else
         {
-            if(InTut)//if just finished tutorial phase
+            if(InTut)
             {
+                //finish
                 FinishTutorial();
+
+                //wait
                 yield return new WaitForSeconds(1);
-                ActivePuzzleIndex = -1;//od ted zacinaji main puzzly, pripravi se prvni puzzle
-                if (ActiveConfig.puzzles.Count==1)//pokud je v aktualni konfiguraci jen jeden puzzle, je to zaroven posledni puzzle
+
+                //start next
+                ActivePuzzleIndex = -1;
+                if (ActiveConfig.puzzles.Count==1)
                 {
                     nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
                 }
@@ -571,10 +648,14 @@ public class NewManager : MonoBehaviour {
             {
                 if (ActivePuzzleIndex == ActiveConfig.puzzles.Count - 1)//if just finished the last puzzle
                 {
+                    //finish
                     PhaseFinish();
+
+                    //wait
                     yield return new WaitForSeconds(2);
 
-                    if (InReplayMode)//*************************
+                    //start next
+                    if (InReplayMode)
                     {
                         phaseLoadingPanel.SetActive(false);
                         yield break;//zastav prehravani (jinak by se to soatalo do startu a tam se prehravani spustilo znova)
@@ -586,9 +667,14 @@ public class NewManager : MonoBehaviour {
                 }
                 else//if just finished any other puzzle
                 {
+                    //finish
                     PhaseFinish();
+
+                    //wait
                     yield return new WaitForSeconds(1);
-                    if (ActivePuzzleIndex == ActiveConfig.puzzles.Count - 2)//pokud nasleduje posledni puzzle...
+
+                    //start next
+                    if (ActivePuzzleIndex == ActiveConfig.puzzles.Count - 2)
                     {
                         nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
                     }
@@ -596,11 +682,24 @@ public class NewManager : MonoBehaviour {
                 }
             }
         }
-        phaseLoadingPanel.SetActive(false);//=>koordinator zase muze volne klikat
+        phaseLoadingPanel.SetActive(false);//allow the experimentor to use GUI again
         Switching = false;
     }
 
-    //********************************************** POMOCNE FUNKCE ***************************************************************************
+
+
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // HELPER FUNTIONS
+    //--------------------------------------------------------------------------------------------------------------------------
+
+
+    /// <summary>
+    /// checks if <paramref name="s"/> contains whitespace characters only
+    /// </summary>
+    /// <param name="s">checked string</param>
+    /// <returns>true = contains only whitespace characters</returns>
     private bool ContainsWhitespaceOnly(string s)
     {
         foreach (char c in s)
@@ -613,7 +712,12 @@ public class NewManager : MonoBehaviour {
         return true;
     }
 
-    private bool IsValidForCsv(string s)//tedy neobsahuje carku (ani uvozovky projistotu)(protoze se to pak bude ukladat do .csv )
+    /// <summary>
+    /// checks if <paramref name="s"/> does not contain commas and quotation marks
+    /// </summary>
+    /// <param name="s">checked strind</param>
+    /// <returns>true = does not contain forbidden chars</returns>
+    private bool IsValidForCsv(string s)
     {
         foreach (char c in s)
         {
@@ -625,18 +729,25 @@ public class NewManager : MonoBehaviour {
         return true;
     }
 
-    //***********************************************UPDATING DURING A PHASE & PUBLIC FUNCTIONS********************************************************************
+
+
+
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // UPDATING DURING A PHASE & PUBLIC FUNCTIONS
+    //--------------------------------------------------------------------------------------------------------------------------
 
     private void Update()
     {
-        if (countingDown && (!PhaseFinished))//aka if main phase && !finished
+        if (countingDown && (!PhaseFinished))
         {
-            //zobrazeni timeru
+            //show timer
             int minutes = (int)timeLeft / 60;
             float seconds = timeLeft % 60;
             timerText.text = string.Format("{0:00}:{1:00.0}", minutes, seconds);
 
-            //kontrola dobehnuti timeru
+            //check timer
             if (timeLeft <= 0)
             {
                 CurrentPuzzle.OnTimerStop();//puzzle specific action
@@ -644,14 +755,15 @@ public class NewManager : MonoBehaviour {
                 PhaseFinished = true;
                 nextButton.image.color = new Color(1, 0.5f, 0);
             }
-            //update timeru
+            //update timer
             timeLeft -= Time.deltaTime;
         }
 
-        //and here maybe some CustomUpdate function (such as fill water maybe?)... currentPuzzle.CustomUpdate();
-
     }
 
+    /// <summary>
+    /// decreases score by one (if current phase is not finished yet)
+    /// </summary>
     public void DecreaseScore()
     {
         if (!PhaseFinished)
@@ -660,6 +772,10 @@ public class NewManager : MonoBehaviour {
             scoreText.text = skore.ToString();
         }
     }
+
+    /// <summary>
+    /// increases score by one (if current phase is not finished yet)
+    /// </summary>
     public void IncreaseScore()
     {
         if (!PhaseFinished)
@@ -669,6 +785,9 @@ public class NewManager : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// marks current phase as finished
+    /// </summary>
     public void SetPhaseComplete()
     {
         if (!PhaseFinished)
@@ -677,24 +796,42 @@ public class NewManager : MonoBehaviour {
             nextButton.image.color = highlightColor;
         }
     }
+
+    /// <summary>
+    /// sets the content of the wall picture
+    /// </summary>
+    /// <param name="t">the image to display</param>
     public void SetWallPicture(Texture t)
     {
         modelPictureFrame.material.mainTexture = t;
     }
+
+    /// <summary>
+    /// returns wall picture to its original size
+    /// </summary>
     public void ResetWallPictureSize()
     {
         imageHolder.localScale = originalScale;
     }
+
+    /// <summary>
+    /// scales the wall picture
+    /// </summary>
+    /// <param name="x">multiplicator for the x axis</param>
+    /// <param name="y">multiplicator for the y axis</param>
     public void MultiplyWallpictureScale(float x, float y)
     {
         imageHolder.localScale = originalScale;
         imageHolder.localScale = new Vector3(imageHolder.localScale.x * x, imageHolder.localScale.y * y, 0.2f);
     }
 
+    /// <summary>
+    /// cancels running experiment and returns back to menu
+    /// </summary>
     public void OnQuitClicked()
     {
-        playeridInputField.text = "";//************
-        StopAllCoroutines();//************
+        playeridInputField.text = "";
+        StopAllCoroutines();
 
         if (InStart)
         {
@@ -714,23 +851,37 @@ public class NewManager : MonoBehaviour {
 
         FinishCurrentConfig();
         FinishExperiment();
-        MenuLogic.instance.spectatorCanvas.SetActive(false);
-        MenuLogic.instance.chooseMenuCanvas.SetActive(true);
-        //staci to takhle, nebo jeste nejake specialni chovani....
-
-        //******************************************************
         Logger.instance.StopLogger();
         UImangr.MakeSureTimeIsntStopped();
+
+        MenuLogic.instance.spectatorCanvas.SetActive(false);
+        MenuLogic.instance.chooseMenuCanvas.SetActive(true);
     }
 
-    //********************************************************** NPC stuff ***************************************************************
-    private void CreateCharacter(NpcModel model, NpcBeahviour bahaviour)//instanciuje zvoleny model npc a pripoji k nemu zvoleny animator (chovani)
+
+
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // THINGS FOR THE NPC
+    //--------------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// creates a NPC from <paramref name="model"/> and <paramref name="bahaviour"/>
+    /// </summary>
+    /// <param name="model"></param>
+    /// <param name="bahaviour"></param>
+    private void CreateCharacter(NpcModel model, NpcBeahviour bahaviour)
     {
         GameObject npc = Instantiate(model.modelObject, npcPoint.position, npcPoint.rotation);
         npc.GetComponent<Animator>().runtimeAnimatorController = bahaviour.behaviourAnimController as RuntimeAnimatorController;
         theNpc = npc;
         npcName = model.modelName;
     }
+
+    /// <summary>
+    /// destroyes currently used NPC
+    /// </summary>
     private void DestroyCharacter()
     {
         Destroy(theNpc);
@@ -740,13 +891,23 @@ public class NewManager : MonoBehaviour {
 
 }
 
-//krome toho ze je to model, musi to mit jeste nejake jmeno, podle ktereho se model vybere v menu create config (stejne tak behaviour)
+
+
+/// <summary>
+/// class attaching a name to a NPC model, which is used for selecting the model in menu
+/// </summary>
 [System.Serializable]
 public class NpcModel
 {
     public string modelName;
     public GameObject modelObject;
 }
+
+
+
+/// <summary>
+/// class attaching a name to a NPC behaviour (NPC animator), which is used for selecting the behaviour in menu
+/// </summary>
 [System.Serializable]
 public class NpcBeahviour
 {
@@ -754,10 +915,16 @@ public class NpcBeahviour
     public RuntimeAnimatorController behaviourAnimController;
 }
 
+
+
+/// <summary>
+/// class for WelcomeSpeechBehaviour containing info abou one line o text
+/// </summary>
 [System.Serializable]
-public class Sentence//pro WelcomeSpeechBehaviour
-{
-    public string text;//veta
-    public bool replaceAlex;//if true, nahradi vyskyty "Alex" ve vete jmenem aktualne vybraneho NPC
-    public AudioClip audio;//optional, pouzije se pouze pokud celkove bude useSound==true v tom konretnim behaviouru
+public class Sentence
+{ 
+    //+++++++++++++++++++++++++++++++++++++podivne komentare!!!
+    public string text;///<the sentence
+    public bool replaceAlex;///<if true, replace "Alex" in the sentence by the name of currently used NPC
+    public AudioClip audio;///<optional, used only if useSound==true in WelcomeSpeechBehaviour
 }

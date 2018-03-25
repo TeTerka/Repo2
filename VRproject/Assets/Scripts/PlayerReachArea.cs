@@ -1,13 +1,19 @@
 ﻿using UnityEngine;
 
-//oblast kam hrac dosahne (aby se veci mohly respawnovat, kdyz se dostanou mimo dosah hrace)
+/// <summary>
+/// Describes the area of the player's reach, so that objects out of his reach can be respawned, GameObject with this script on must have a Collider component
+/// </summary>
 
 public class PlayerReachArea : MonoBehaviour {
 
-    private void OnTriggerExit(Collider other)//pokud neco vypadne z dosahu hrace
+    /// <summary>
+    /// Unity OnTriggerExit: Respawns PuzzleTile that fell out of reach
+    /// </summary>
+    /// <param name="other">object that fell out of reach</param>
+    private void OnTriggerExit(Collider other)
     {
         PuzzleTile pt;
-        if((pt = other.gameObject.GetComponent<PuzzleTile>())!=null)//pokud to co vypadlo z dosahu je dilek
+        if((pt = other.gameObject.GetComponent<PuzzleTile>())!=null)
         {
                 pt.RespawnYourself();
         }

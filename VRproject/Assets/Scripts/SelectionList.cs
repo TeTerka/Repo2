@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 
-//from http://wiki.unity3d.com/index.php/ImprovedSelectionList
-//needed for FileBrowser
-
+/// <summary>
+/// needed for FileBrowser
+/// </summary>
+/// <remarks>copied from http://wiki.unity3d.com/index.php/ImprovedSelectionList </remarks>
 public class GUILayoutx
 {
 

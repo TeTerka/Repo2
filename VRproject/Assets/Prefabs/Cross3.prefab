@@ -91,7 +91,7 @@ GameObject:
   - component: {fileID: 114864192611416078}
   m_Layer: 0
   m_Name: Cross3
-  m_TagString: PipeTile
+  m_TagString: InteractibleObject
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -235,9 +235,6 @@ MonoBehaviour:
   particleRight: {fileID: 198013377763610986}
   particleDown: {fileID: 198543141404357880}
   particleLeft: {fileID: 198737648525214954}
-  i: 0
-  j: 0
-  seen: 0
 --- !u!198 &198013377763610986
 ParticleSystem:
   m_ObjectHideFlags: 1

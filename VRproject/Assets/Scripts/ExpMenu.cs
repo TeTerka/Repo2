@@ -4,16 +4,18 @@ using System.Xml.Serialization;
 using UnityEngine.UI;
 using System.IO;
 
-//ovladani pro CreateExperimentCanvas
-
+/// <summary>
+/// Controls for the "create experiment" menu page
+/// </summary>
 public class ExpMenu : MonoBehaviour {
 
-    [Header("UI refernces")]
+    [Header("UI reference")]
     public InputField expName;
     public GameObject errorText;
     public GameObject chosenConfigScrollViewContent;
     public GameObject availableConfigScrollViewContent;
     private GameObject InnerScrollViewContent;
+    public CofigMenu cm;
 
     [Header("PopupPanel")]
     public GameObject popupPanel;
@@ -22,37 +24,20 @@ public class ExpMenu : MonoBehaviour {
 
     [Header("prefabs")]
     public Button availableConfigInfoButtonPrefab;
-    public GameObject puzzleInfoPanelPrefab;
+
+    [Header("to distinguish various puzzle types")]
+    public Text headline;
+    private AbstractPuzzle currentPuzzleType;
 
     //lists...
     private List<Configuration> chosenConfigs = new List<Configuration>();
     private List<Button> chosenConfigInfoButtons = new List<Button>();
-    //private List<Button> availableConfigInfoButtons = new List<Button>();
-    private List<GameObject> puzzleInfoPanels = new List<GameObject>();
 
-    private string puzzleType;
-    public Text headline;
-
-    private void Start()
-    {
-        ////if there is a config file ----- musim kontrolovat aby to nespadlo atak....staci File.Exists?....asi zatim jo
-        ////"load" it
-        //if (File.Exists(Application.dataPath + "/fff.xml"))
-        //{
-        //    var ser = new XmlSerializer(typeof(ListOfConfigurations));
-        //    using (var stream = new FileStream(Application.dataPath + "/fff.xml", FileMode.Open))
-        //    {
-        //        MenuLogic.instance.availableConfigs = ser.Deserialize(stream) as ListOfConfigurations;
-        //    }
-        //}
-        //
-        //for (int i = 0; i < MenuLogic.instance.availableConfigs.configs.Count; i++)
-        //{
-        //    AddOneNewConfig(MenuLogic.instance.availableConfigs.configs[i]);
-        //}
-    }
-
-    public void AddOneNewConfig(Configuration c)//gets called after creating new configuration
+    /// <summary>
+    /// adds a configuration to the list of available configurations
+    /// </summary>
+    /// <param name="c">added configuration</param>
+    public void AddOneNewConfig(Configuration c)
     {
         //instantiate a config info button from prefab and fill it out with config info
         var p = Instantiate(availableConfigInfoButtonPrefab, availableConfigScrollViewContent.transform);
@@ -76,53 +61,58 @@ public class ExpMenu : MonoBehaviour {
         InnerScrollViewContent = p.GetComponentInChildren<ContentSizeFitter>().gameObject;
         for (int j = 0; j < c.puzzles.Count; j++)//inside fill out info about each puzzle that the configuration contains
         {
-            var q = Instantiate(puzzleInfoPanelPrefab, InnerScrollViewContent.transform);
-            q.GetComponentInChildren<Text>().text = c.puzzles[j].widthpx + " x " + c.puzzles[j].heigthpx;
-            List<Image> images = new List<Image>();
-            q.GetComponentsInChildren<Image>(images);
-            if (c.puzzleType=="PipePuzzle")
-            {
-                images[1].sprite = MenuLogic.instance.pipeImage;
-            }
-            if (c.puzzleType == "CubePuzzle")
-            {
-                images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
-                if (images[1].sprite == null)//neboli if picture loadig failed
-                {
-                    images[1].sprite = MenuLogic.instance.missingImage;
-                }
-            }
+            var q = Instantiate(currentPuzzleType.infoPanelPrefab, InnerScrollViewContent.transform);
+            currentPuzzleType.FillTheInfoPanel(q, c.puzzles[j]);
         }
 
-        //make the button clickable (so that it can be selected for an experiment...and deletable by right clicking)
+        //make the button clickable (so that it can be selected for an experiment by left clicking or deleted by right clicking)
         p.gameObject.GetComponent<RightClick>().leftClick.AddListener(delegate { OnAvailableConfigClick(p, c); });
         p.gameObject.GetComponent<RightClick>().rightClick.AddListener(delegate { OnRightClick(p, c); });
-        //////////p.onClick.AddListener(delegate { OnAvailableConfigClick(p, c); });
-
-        //availableConfigInfoButtons.Add(p);
     }
 
-    public void OnAvailableConfigClick(Button availableButton,Configuration c)//selects this button/config for experiment (and put it to chosenConfigsList)
+    /// <summary>
+    /// adds a configuration to the list of selected configurations (selects it for the experiment)
+    /// </summary>
+    /// <param name="availableButton">button representing the added configuration</param>
+    /// <param name="c">added configuration</param>
+    public void OnAvailableConfigClick(Button availableButton,Configuration c)
     {
-        if (c.puzzleType != this.puzzleType)//******************************************************************
+        if (c.puzzleType != this.currentPuzzleType.typeName)//make sure the experiment consists of configurations of the right type
             return;
+
+        foreach (var item in chosenConfigs)//make sure the experiment cosists of uniquely named configurations
+        { 
+            if (c.name == item.name)
+                return;
+        }
 
         Button chosenButton = Instantiate(availableButton, chosenConfigScrollViewContent.transform);
         chosenConfigInfoButtons.Add(chosenButton);
         chosenConfigs.Add(c);
         chosenButton.onClick.AddListener(delegate { OnChosenConfigClick(chosenButton, c); });//make it removable from experiment
     }
-    public void OnChosenConfigClick(Button b, Configuration c)//removes this button/config from experiment (and removes it from chosenConfigsList)
+
+    /// <summary>
+    /// deletes configuration from list of selected configurations (from the experiment)
+    /// </summary>
+    /// <param name="b">button representing the deleted configuration</param>
+    /// <param name="c">deleted configuration</param>
+    public void OnChosenConfigClick(Button b, Configuration c)
     {
+        //remove the configuration
         chosenConfigs.Remove(c);
+        //remove the button
         b.gameObject.SetActive(false);
         Destroy(b.gameObject);
         chosenConfigInfoButtons.Remove(b);
     }
 
-    public void OnRightClick(Button b, Configuration c)//pravym kliknutim se configurace zcela vymaze (ze senamu available konfiguraci)
-        //a co jiz vytvorene experimenty, ktere tyto konfigurace pouzivaji? maji se smazat?nebo ne? vadi to?.......
-        //je vubec tahle moznost mazani potreba?
+    /// <summary>
+    /// brings up a popup panel "Do you really want to completely delete this config?"
+    /// </summary>
+    /// <param name="b">button representing the configuration to be deleted</param>
+    /// <param name="c">configuration to be deleted</param>
+    public void OnRightClick(Button b, Configuration c)
     {
         popupPanel.SetActive(true);
         yesButton.onClick.RemoveAllListeners();
@@ -130,13 +120,18 @@ public class ExpMenu : MonoBehaviour {
         popupConfNameText.text = c.name;
     }
 
-    public void DeleteConfig(Button b, Configuration c)//yes click
+    /// <summary>
+    /// deletes configuration from the list of available configurations
+    /// </summary>
+    /// <param name="b">button representing the deleted configuration</param>
+    /// <param name="c">deleted configuration</param>
+    public void DeleteConfig(Button b, Configuration c)
     {
         Destroy(b.gameObject);
         MenuLogic.instance.availableConfigs.configs.Remove(c);
         for (int i = chosenConfigs.Count - 1; i >= 0; i--)
         {
-            if (chosenConfigs[i].name == c.name)//ehm, porovnavat to podle jmena?...ale ted me nenapada nic lepsiho...
+            if (chosenConfigs[i].name == c.name)
             {
                 Destroy(chosenConfigInfoButtons[i].gameObject);
                 chosenConfigInfoButtons.RemoveAt(i);
@@ -146,36 +141,47 @@ public class ExpMenu : MonoBehaviour {
         popupPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// deactivates the popup panel
+    /// </summary>
     public void NoClick()
     {
         popupPanel.SetActive(false);
     }
 
-
-    //obsluhy tech tri tlacitek na CreateExperimentCanvas:
+    /// <summary>
+    /// action for "Create New Config" button
+    /// </summary>
     public void OnCreateNewConfigClicked()
     {
         MenuLogic.instance.confMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
+        cm.SetPuzzleType(currentPuzzleType.typeName);
     }
 
+    /// <summary>
+    /// action for "Cancel" button
+    /// </summary>
     public void OnCancelInExpMenuClicked()
     {
-        //clear stuff...
-        //...maybe
-
-        //switch menus
+        //switch menu pages
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
         ClearThisMenuPage();
 
     }
 
+    /// <summary>
+    /// action for "Save" button
+    /// </summary>
+    /// <remarks>
+    /// creates a new experiment containing selected configurations and creates its folder and a results file on disc, then switches to main menu page
+    /// </remarks>
     public void OnSaveExperimentClick()
     {
         //create only if everything is correctly filled out (corretly = has a name and consists of at leat one configuration)
         bool ok = true;
-        if (expName.text == null || MenuLogic.instance.ContainsWhitespaceOnly(expName.text))
+        if (expName.text == null || MenuLogic.instance.ContainsWhitespaceOnly(expName.text))//correct name
         {
             ok = false;
             expName.image.color = Color.red;
@@ -184,7 +190,7 @@ public class ExpMenu : MonoBehaviour {
         {
             expName.image.color = Color.white;
         }
-        if (chosenConfigs.Count == 0)
+        if (chosenConfigs.Count == 0)//contains at least on config
         {
             ok = false;
         }
@@ -200,7 +206,7 @@ public class ExpMenu : MonoBehaviour {
         //create experiment (class)
         Experiment e = new Experiment();
         e.name = expName.text;
-        e.puzzleType = puzzleType;//*********************************************
+        e.puzzleType = currentPuzzleType.typeName;
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
@@ -219,14 +225,14 @@ public class ExpMenu : MonoBehaviour {
             f.Close();
             e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
             //add a header to the file
-            using (StreamWriter sw = new StreamWriter(e.resultsFile, true))//true for append
+            using (StreamWriter sw = new StreamWriter(e.resultsFile, true))
             {
                 sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
                 sw.Close();
             }
             //create file with experiment info
             var ser = new XmlSerializer(typeof(ListOfConfigurations));
-            using (var stream = new System.IO.FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", System.IO.FileMode.Create))
+            using (var stream = new FileStream(Application.dataPath + "/" + e.name + j + "/configsInfo.xml", FileMode.Create))
             {
                 ListOfConfigurations loc = new ListOfConfigurations();
                 loc.configs = e.configs;
@@ -249,13 +255,28 @@ public class ExpMenu : MonoBehaviour {
         ClearThisMenuPage();
     }
 
+    /// <summary>
+    /// sets the current puzzle type to be <paramref name="type"/>
+    /// </summary>
+    /// <remarks>
+    /// should be called everytime when switching to this menu page
+    /// </remarks>
+    /// <param name="type">puzzle type</param>
     public void SetPuzzleType(string type)
     {
-        puzzleType = type;
+        foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
+        {
+            if (puzzleType.typeName == type)
+                currentPuzzleType = puzzleType;
+        }
         headline.text = "Create new "+type+" experiment";
     }
 
-    private void ClearThisMenuPage()//clear only selected configs, not (yet) the available configs...
+    /// <summary>
+    /// clears name field and all selected configurations
+    /// should be called everytime when switching away from this menu page
+    /// </summary>
+    private void ClearThisMenuPage()
     {
         expName.text = "";
         expName.image.color = Color.white;

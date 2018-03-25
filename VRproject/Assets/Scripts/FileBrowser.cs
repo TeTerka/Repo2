@@ -3,26 +3,26 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-/*
-	File browser for selecting files or folders at runtime.
- */
-//from http://wiki.unity3d.com/index.php?title=ImprovedFileBrowser
-//with some fixes + my improvement (possibility to change drives, and possibility to choose multiple patterns (in my case .jpg and .png))
-//my improvements marked with a comment "my stuff"
-
 public enum FileBrowserType
 {
     File,
     Directory
 }
 
+
+/// <summary>
+/// File browser for selecting files or folders at runtime.
+/// </summary>
+/// <remarks>
+/// <para>copied from http://wiki.unity3d.com/index.php?title=ImprovedFileBrowser </para>
+/// <para>with some fixes + my improvement (possibility to change drives, and possibility to choose multiple patterns (in my case .jpg and .png))</para>
+/// <para>my improvements are marked with a comment "my stuff"</para>
+/// </remarks>
+
 public class FileBrowser
 {
-    //my stuff*********************************
+    //my stuff
     private string[] drives = System.IO.Directory.GetLogicalDrives();
-    //nasledujici (lepsi) varianta nefungje (kvuli monu?)
-    //private DriveInfo[] allDrives = DriveInfo.GetDrives();
-    //*****************************************
 
     // Called when the user clicks cancel or select
     public delegate void FinishedCallback(string path);
@@ -386,11 +386,10 @@ public class FileBrowser
         //my stuff.......................................................
         foreach (string str in drives)
         {
-            if (Directory.Exists(str))//ale co kdyz neni ready atd.....???
+            if (Directory.Exists(str))
             {
                 if (GUILayout.Button(str, GUILayout.Width(30)))
                 {
-                    //do stuff...
                     SetNewDirectory(str);
                 }
             }

@@ -1,8 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
+
+
+/// <summary>
+/// for displaying error messages
+/// </summary>
 public class ErrorCatcher : MonoBehaviour {
 
     public static ErrorCatcher instance;
@@ -18,6 +21,10 @@ public class ErrorCatcher : MonoBehaviour {
         catchedError = false;
     }
 
+    /// <summary>
+    /// shows a window with <paramref name="errorText"/> and stops time
+    /// </summary>
+    /// <param name="errorText">the displayed text</param>
     public void Show(string errorText)
     {
         catchedError = true;
@@ -26,16 +33,15 @@ public class ErrorCatcher : MonoBehaviour {
         errorDescription.text = errorText;
 
         Logger.instance.StopLogger();
-        //+nejak stopnout vsechno (koordinator je stopnuty pomoci bloskingPanelu, ale co hrac a updaty?)
-        Time.timeScale = 0;//asi - trackovani hlavy a rukou normalne pokracuje, ale zastavi se vsechny Updaty, takze se nic moc neda udelat, jen se rozhlizet
-        //mozna jeste setActive(false) obe ruce
+        Time.timeScale = 0;
     }
 
+    /// <summary>
+    /// exits application
+    /// </summary>
     public void OnErrorQuitClicked()
     {
-        //........
-        errorCanvas.SetActive(false);
-        Application.Quit();//asi
+        Application.Quit();
     }
 
 }

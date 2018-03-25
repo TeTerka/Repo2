@@ -74,7 +74,7 @@ GameObject:
   - component: {fileID: 114828298860999730}
   m_Layer: 0
   m_Name: Curve
-  m_TagString: PipeTile
+  m_TagString: InteractibleObject
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -204,9 +204,6 @@ MonoBehaviour:
   particleRight: {fileID: 198611292511238902}
   particleDown: {fileID: 0}
   particleLeft: {fileID: 0}
-  i: 0
-  j: 0
-  seen: 0
 --- !u!198 &198611292511238902
 ParticleSystem:
   m_ObjectHideFlags: 1

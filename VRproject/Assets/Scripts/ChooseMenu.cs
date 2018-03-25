@@ -4,8 +4,9 @@ using System.Xml.Serialization;
 using UnityEngine;
 using UnityEngine.UI;
 
-//ovladani pro ChooseExpCanvas
-
+/// <summary>
+/// Controls for the "choose experiment" menu page
+/// </summary>
 public class ChooseMenu : MonoBehaviour {
 
     private Experiment chosenExperiment;
@@ -26,7 +27,6 @@ public class ChooseMenu : MonoBehaviour {
     [Header("Prefabs")]
     public Button expNameButtonPrefab;
     public GameObject expConfInfoPanelPrefab;
-    public GameObject puzzleInfoPanelPrefab;
 
     private List<Button> expButtons = new List<Button>();
     private List<GameObject> expInfoPanels = new List<GameObject>();
@@ -46,6 +46,9 @@ public class ChooseMenu : MonoBehaviour {
         AddAllNewExpToAvailable();
     }
 
+    /// <summary>
+    /// makes sure that list of available experimnts contains all of the available experiments
+    /// </summary>
     public void AddAllNewExpToAvailable()
     {
         for (int i = expButtons.Count; i < MenuLogic.instance.availableExperiments.experiments.Count; i++)
@@ -54,6 +57,10 @@ public class ChooseMenu : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// adds new experiment to the list of available experiments
+    /// </summary>
+    /// <param name="e">added experiment</param>
     private void AddExpToAvailables(Experiment e)
     {
         Button b = Instantiate(expNameButtonPrefab, availableExpsScrollViewContent.transform);
@@ -63,7 +70,12 @@ public class ChooseMenu : MonoBehaviour {
         expButtons.Add(b);
     }
 
-    public void OnAvailableExpClick(Button b, Experiment e)//choose this experiment and show info about it (left click)
+    /// <summary>
+    /// choose this experiment and show info about it
+    /// </summary>
+    /// <param name="b">button representing chosen experiment</param>
+    /// <param name="e">chosen experiment</param>
+    public void OnAvailableExpClick(Button b, Experiment e)
     {
         if(e.ids.Count>0)
         {
@@ -111,33 +123,27 @@ public class ChooseMenu : MonoBehaviour {
             }
             texts[3].text = c.timeLimit.ToString();
 
+            AbstractPuzzle currentPuzzleType=null;
+            foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
+            {
+                if (puzzleType.typeName == e.puzzleType)
+                    currentPuzzleType = puzzleType;
+            }
+            if(currentPuzzleType==null)
+            {
+                ErrorCatcher.instance.Show("Unknown type of puzzle");
+                return;
+            }
+
             InnerScrollViewContent = p.GetComponentInChildren<ContentSizeFitter>().gameObject;
             for (int j = 0; j < c.puzzles.Count; j++)//inside fill out info about each puzzle that the configuration contains
             {
-                var q = Instantiate(puzzleInfoPanelPrefab, InnerScrollViewContent.transform);
-                q.GetComponentInChildren<Text>().text = c.puzzles[j].widthpx + " x " + c.puzzles[j].heigthpx;
-                List<Image> images = new List<Image>();
-                q.GetComponentsInChildren<Image>(images);
-                if (e.puzzleType == "PipePuzzle")
-                {
-                    images[1].sprite = MenuLogic.instance.pipeImage;
-                }
-                if (e.puzzleType == "CubePuzzle")
-                {
-                    images[1].sprite = MenuLogic.instance.LoadNewSprite(c.puzzles[j].pathToImage);
-                    //**************************************************************************************
-                    //pozn.: predpokladam ze obsah xml nebude nikdo menit, jedine co se tedy muze pokazit je, ze ulozena cesta prestane vest k obrazku
-                    //je tedy potreba to zkontrolovat:
-                    if (images[1].sprite == null)//neboli if picture loadig failed
-                    {
-                        loadSuccessful = false;
-                        images[1].sprite = MenuLogic.instance.missingImage;
-                        missingStuff += c.puzzles[j].pathToImage + "\n";
-                    }
-                    //**************************************************************************************
-                }
+                var q = Instantiate(currentPuzzleType.infoPanelPrefab, InnerScrollViewContent.transform);
+                bool success = currentPuzzleType.FillTheInfoPanel(q, c.puzzles[j]);
+                if (!success)
+                    loadSuccessful = false;
             }
-            if(!System.IO.File.Exists(e.resultsFile))//jeste muze byt problem, ze prestane existovat slozka s vysledky, tak je to taky treba osetrit:
+            if(!File.Exists(e.resultsFile))//in case of problems with access to results file
             {
                 loadSuccessful = false;
                 missingStuff += e.resultsFile + "\n";
@@ -145,9 +151,12 @@ public class ChooseMenu : MonoBehaviour {
         }
     }
 
-    public void OnRightClick(Button b, Experiment e)//pravym kliknutim se experiment zcela vymaze (ze senamu available experimentu)
-                                                       //a co jiz "rozehrane" ci jiz dokoncene experimenty? mazat jim data z vysledku< asi ne, ne?
-                                                       //takze to je jakoze mazany "sablony pro experiment"?
+    /// <summary>
+    /// brings up a popup panel "Do you really want to delete this experiment?"
+    /// </summary>
+    /// <param name="b">button representing the experiment to be deleted</param>
+    /// <param name="e">experiment to be deleted</param>
+    public void OnRightClick(Button b, Experiment e)
     {
         popupPanel.SetActive(true);
         yesButton.onClick.RemoveAllListeners();
@@ -155,7 +164,12 @@ public class ChooseMenu : MonoBehaviour {
         popupExpNameText.text = e.name;
     }
 
-    public void DeleteExperiment(Button b,Experiment e)//yes click
+    /// <summary>
+    /// completely deletes an experiment
+    /// </summary>
+    /// <param name="b">button representing the deleted experiment</param>
+    /// <param name="e">deleted experiment</param>
+    public void DeleteExperiment(Button b,Experiment e)
     {
         if (chosenExperiment == e)
         {
@@ -169,27 +183,38 @@ public class ChooseMenu : MonoBehaviour {
         expButtons.Remove(b);
         Destroy(b.gameObject);
         MenuLogic.instance.availableExperiments.experiments.Remove(e);
-        //RefreshExpsList();
         popupPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// deactivates the popup panel
+    /// </summary>
     public void NoClick()
     {
         popupPanel.SetActive(false);
     }
 
-
+    /// <summary>
+    /// action for "Test experiment" button
+    /// </summary>
     public void OnTestClicked()
     {
         StartChosenExperinemt(true);
     }
 
+    /// <summary>
+    /// action for "Start experiment" button
+    /// </summary>
     public void OnRunClicked()
     {
         StartChosenExperinemt(false);
     }
 
-    private void StartChosenExperinemt(bool testOnly)//true = only test run of the experiment (no data will be saved etc.)
+    /// <summary>
+    /// starts currently chosen experiment
+    /// </summary>
+    /// <param name="testOnly">true = run in test mode, false = run in normal mode</param>
+    private void StartChosenExperinemt(bool testOnly)
     {
         if (chosenExperiment != null && loadSuccessful)
         {
@@ -211,13 +236,19 @@ public class ChooseMenu : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// action for "Cancel" button
+    /// </summary>
     public void OnCancelInChooseMenuClicked()
     {
         MenuLogic.instance.mainMenuCanvas.SetActive(true);
         MenuLogic.instance.chooseMenuCanvas.SetActive(false);
     }
 
-    protected void OnGUI()//vykreslovani file browseru
+    /// <summary>
+    /// draws the file browser
+    /// </summary>
+    protected void OnGUI()
     {
         GUI.skin = customSkin;
         if (m_fileBrowser != null)
@@ -226,6 +257,9 @@ public class ChooseMenu : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// brings up the file browser to choose a logfile to be replayed
+    /// </summary>
     public void OnReplayClick()
     {
         blockingPanel.SetActive(true);
@@ -239,6 +273,11 @@ public class ChooseMenu : MonoBehaviour {
         m_fileBrowser.DirectoryImage = m_directoryImage;
         m_fileBrowser.FileImage = m_fileImage;
     }
+
+    /// <summary>
+    /// Starts replaying the selected logfile
+    /// </summary>
+    /// <param name="path">path to the selected file</param>
     protected void FileSelectedCallback(string path)
     {
         m_fileBrowser = null;        
@@ -246,7 +285,7 @@ public class ChooseMenu : MonoBehaviour {
 
         if (path != null)
         {
-            //**deserialize the configsInfo.xml (correctly adjust path to that!)
+            //deserialize the configsInfo.xml (correctly adjust path to that)
             string newPath = path.Substring(0, path.LastIndexOf('\\') + 1) + "\\configsInfo.xml";
             ListOfConfigurations allConfigs = new ListOfConfigurations();
             try
@@ -261,8 +300,6 @@ public class ChooseMenu : MonoBehaviour {
                 }
                 else
                 {
-                    //Debug.Log("deserialize fail");
-                    //Debug.Log(newPath);
                     ErrorCatcher.instance.Show("Wanted to deserialize configinfo but file " + newPath + " does not exist.");
                     return;
                 }
@@ -273,7 +310,7 @@ public class ChooseMenu : MonoBehaviour {
                 return;
             }
 
-            //**load the file
+            //load the file
             Logger.instance.SetLoggerPath(path);
             string id = null;
             string name = null;
@@ -286,7 +323,7 @@ public class ChooseMenu : MonoBehaviour {
                 }
                 using (StreamReader file = new StreamReader(path))
                 {
-                    //**read info from first line of log file (there should be the config name)
+                    //read info from first 2 lines of log file (there should be the config name and th eplayer id)
                     name = file.ReadLine();
                     id = file.ReadLine();
                     file.Close();
@@ -297,7 +334,7 @@ public class ChooseMenu : MonoBehaviour {
                 ErrorCatcher.instance.Show("Wanted to read logfile " + path + " but it threw error " + exc.ToString());
                 return;
             }
-            //**find this in all the configs
+            //find this in all the configs
             Configuration c = null;
             foreach (Configuration conf in allConfigs.configs)
             {
@@ -307,49 +344,21 @@ public class ChooseMenu : MonoBehaviour {
                     break;
                 }
             }
-            //**check if it is ok
+            //check if it is ok
             if (c == null)
             {
-                //Debug.Log("config fail");
-                //Debug.Log(name);
                 ErrorCatcher.instance.Show("The config "+name+" in logfile " + path + " does not exist.");
                 return;
             }
-            //**create fake exp containing only this config (but dont create any result folders etc., also dont add it to MenuLogic list of experiments...)
+            //create fake experiment containing only this config (but dont create any result folders etc., also dont add it to MenuLogic list of experiments)
             Experiment e = new Experiment();
             e.name = "Replay " + id + ", " + name;
             e.puzzleType = c.puzzleType;
             e.configs = new List<Configuration> { c };
-            //**start that exp in replay mode (so that the rest of the log file will be used to simulate player&coordinator actions)
-            NewManager.instance.StartExperiment(e, false, true);//justReplay
+            //start that experiment in replay mode (so that the rest of the log file will be used to simulate player&coordinator actions)
+            NewManager.instance.StartExperiment(e, false, true);
             MenuLogic.instance.chooseMenuCanvas.SetActive(false);
             MenuLogic.instance.spectatorCanvas.SetActive(true);
         }
     }
 }
-
-
-
-
-
-
-
-//public void RefreshExpsList()
-//{
-//    //destroy old ones
-//    for (int i = expButtons.Count-1; i >=0; i--)
-//    {
-//        Destroy(expButtons[i].gameObject);
-//    }
-//    expButtons.Clear();
-//    //create new ones
-//    for (int i = 0; i < MenuLogic.instance.availableExperiments.experiments.Count; i++)
-//    {
-//        int iForDelegate = i;
-//        Button b = Instantiate(expNameButtonPrefab, availableExpsScrollViewContent.transform);
-//        b.GetComponentInChildren<Text>().text = MenuLogic.instance.availableExperiments.experiments[i].name;
-//        b.GetComponent<RightClick>().leftClick.AddListener(delegate { OnAvailableExpClick(b, MenuLogic.instance.availableExperiments.experiments[iForDelegate]); });
-//        b.GetComponent<RightClick>().rightClick.AddListener(delegate { OnRightClick(b, MenuLogic.instance.availableExperiments.experiments[iForDelegate]); });
-//        expButtons.Add(b);
-//    }
-//}

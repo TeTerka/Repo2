@@ -8,12 +8,6 @@ AnimatorController:
   m_Name: NPCanimControl
   serializedVersion: 5
   m_AnimatorParameters:
-  - m_Name: StartWelcomeSpeech
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 0}
   - m_Name: StartNewPuzzle
     m_Type: 9
     m_DefaultFloat: 0
@@ -26,13 +20,7 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 0}
-  - m_Name: TabletUp
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 0}
-  - m_Name: TabletDown
+  - m_Name: StartTutorial
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0

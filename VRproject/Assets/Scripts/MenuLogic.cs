@@ -3,40 +3,39 @@ using UnityEngine;
 using System.Xml.Serialization;
 using System.IO;
 
-//nosic dat a funkci sdilenych mezi vsemi strankami menu
 
+/// <summary>
+/// holds data and functions neccessary for multiple menu pages
+/// </summary>
 public class MenuLogic: MonoBehaviour {
-   public GameObject expMenuCanvas;
-   public GameObject confMenuCanvas;
-   public GameObject mainMenuCanvas;
-   public GameObject chooseMenuCanvas;
-    public GameObject spectatorCanvas;
 
-   public ListOfConfigurations availableConfigs = new ListOfConfigurations();
-   public ListOfExperiments availableExperiments = new ListOfExperiments();
+    //references to other menu pages
+    public GameObject expMenuCanvas;
+    public GameObject confMenuCanvas;
+    public GameObject mainMenuCanvas;
+    public GameObject chooseMenuCanvas;
+    public GameObject spectatorCanvas;
+    
+    //available things
+    public ListOfConfigurations availableConfigs = new ListOfConfigurations();
+    public ListOfExperiments availableExperiments = new ListOfExperiments();
 
     public Sprite missingImage;
-    public Sprite pipeImage;
 
-
-    //sigleton stuff
     public static MenuLogic instance;
+
     private void Awake()
     {
-        if(instance!=null)
-        {
-            Debug.Log("Multiple MenuLogics in one scene!");
-        }
         instance = this;
 
         //if there is a exp list file
         //"load" it
-        if (File.Exists(Application.dataPath + "/eee.xml"))
+        if (File.Exists(Application.dataPath + "/exps.xml"))
         {
             try
             {
-                var ser = new XmlSerializer(typeof(ListOfExperiments));
-                using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Open))
+                XmlSerializer ser = new XmlSerializer(typeof(ListOfExperiments));
+                using (var stream = new FileStream(Application.dataPath + "/exps.xml", FileMode.Open))
                 {
                     availableExperiments = new ListOfExperiments();
                     availableExperiments = ser.Deserialize(stream) as ListOfExperiments;
@@ -45,20 +44,20 @@ public class MenuLogic: MonoBehaviour {
             }
             catch(System.Exception exc)
             {
-                ErrorCatcher.instance.Show("Wanted to deserialize " + Application.dataPath + "/eee.xml" + " but it threw error " + exc.ToString());
+                ErrorCatcher.instance.Show("Wanted to deserialize " + Application.dataPath + "/exps.xml" + " but it threw error " + exc.ToString());
                 return;
             }
         }
     }
 
-    private void OnApplicationQuit()//pri vypnuti se provede ulozeni seznamu sablon experimentu
+    private void OnApplicationQuit()//before quitting save the list of available experiments
     {
-        if (!ErrorCatcher.instance.catchedError)//pokud k vypnuti dochazi kvuli erroru, nechci nic ukladat
+        if (!ErrorCatcher.instance.catchedError)//if quitting because of an error, do not save anything
         {
             try
             {
                 var ser = new XmlSerializer(typeof(ListOfExperiments));
-                using (var stream = new FileStream(Application.dataPath + "/eee.xml", FileMode.Create))
+                using (var stream = new FileStream(Application.dataPath + "/exps.xml", FileMode.Create))
                 {
                     ser.Serialize(stream, availableExperiments);
                     stream.Close();
@@ -66,14 +65,37 @@ public class MenuLogic: MonoBehaviour {
             }
             catch (System.Exception exc)
             {
-                ErrorCatcher.instance.Show("Wanted to serialize " + Application.dataPath + "/eee.xml" + " but it threw error " + exc.ToString());
-                Application.CancelQuit();//?????????????????????????????????
+                ErrorCatcher.instance.Show("Wanted to serialize " + Application.dataPath + "/exps.xml" + " but it threw error " + exc.ToString());
+                Application.CancelQuit();
             }
         }
     }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
+    /// <summary>
+    /// checks if <paramref name="s"/> contains whitespace characters only
+    /// </summary>
+    /// <param name="s">checked string</param>
+    /// <returns>true = contains only whitespace characters</returns>
+    public bool ContainsWhitespaceOnly(string s)
+    {
+        foreach (char c in s)
+        {
+            if (!char.IsWhiteSpace(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    /// <summary>
+    /// <para>loads a PNG or JPG image from disk to a Texture2D, assigns this texture to a new sprite and return its reference</para>
+    /// <para>copied form https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/ </para>
+    /// </summary>
+    /// <param name="FilePath">path to image</param>
+    /// <param name="PixelsPerUnit"></param>
+    /// <returns>loaded sprite</returns>
     public Sprite LoadNewSprite(string FilePath, float PixelsPerUnit = 100.0f)
     {
 
@@ -81,15 +103,21 @@ public class MenuLogic: MonoBehaviour {
 
         Sprite NewSprite = new Sprite();
         Texture2D SpriteTexture = LoadTexture(FilePath);
-        if (SpriteTexture == null)
+        if (SpriteTexture == null)//aka if loading failed
         {
-            return null;//kdyz load selze, vrati to null
+            return null;
         }
         NewSprite = Sprite.Create(SpriteTexture, new Rect(0, 0, SpriteTexture.width, SpriteTexture.height), new Vector2(0, 0), PixelsPerUnit);
 
         return NewSprite; 
     }
 
+    /// <summary>
+    /// <para>loads a PNG or JPG file from disk to a Texture2D, returns null if load fails</para>
+    /// <para>copied form https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/ </para>
+    /// </summary>
+    /// <param name="FilePath">path to image</param>
+    /// <returns>loaded texture</returns>
     public Texture2D LoadTexture(string FilePath)
     {
         if (FilePath.EndsWith(".png") || FilePath.EndsWith(".jpg"))
@@ -114,63 +142,67 @@ public class MenuLogic: MonoBehaviour {
             return null;
         }
     }
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public bool ContainsWhitespaceOnly(string s)
-    {
-        foreach (char c in s)
-        {
-            if (!char.IsWhiteSpace(c))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
 }
 
-//serializovane tridy.....
+//-------------------------------------------------------------------------------
+//serializable classes
+//-------------------------------------------------------------------------------
+
+
+/// <summary>
+/// class holding information about a puzzle, used for serialization
+/// </summary>
 public class Puzzle
 {
-    public string pathToImage;//jen pro cube?
+    //for cubes
+    public string pathToImage;
     [XmlArray("spawnPointMix")]
     [XmlArrayItem("int")]
     public List<int> spawnPointMix;
 
+    //for pipes
     [XmlArray("StateField")]
     [XmlArrayItem("row")]
-    public List<Wrapper> chosenList;//jen pro pipe???
+    public List<Wrapper> chosenList;
 
+    //for all
     public int widthpx;
     public int heigthpx;
     public string name;
 }
 
+/// <summary>
+/// helper class used because Unity can not serialize 2D lists
+/// </summary>
 [System.Serializable]
-public class Wrapper//protoze nejde serializovat List<List<...>>
+public class Wrapper
 {
     [XmlArray("states")]
     [XmlArrayItem("state")]
     public List<char> row;
 }
 
+/// <summary>
+/// class holding information about one configuration, used for serialization
+/// </summary>
 public class Configuration
 {
     public string name;
     public bool withNPC;
     public bool withTutorial;
-    //nova cast
-    public int timeLimit;//time limit for each puzzle, in seconds
+    public int timeLimit;//in seconds
     public string modelName;
     public string behaviourName;
     public string puzzleType;
-    //
+
     [XmlArray("Puzzles")]
     [XmlArrayItem("Puzzle")]
     public List<Puzzle> puzzles = new List<Puzzle>();
 }
 
+/// <summary>
+/// helper class to be able to serialize a list of configurations
+/// </summary>
 [XmlRoot("ListOfConfigurations")]
 public class ListOfConfigurations
 {
@@ -179,6 +211,9 @@ public class ListOfConfigurations
     public List<Configuration> configs = new List<Configuration>();
 }
 
+/// <summary>
+/// class holding information about one experiment, used for serialization
+/// </summary>
 public class Experiment
 {
     public string name;
@@ -192,6 +227,10 @@ public class Experiment
     public List<string> ids = new List<string>();
 }
 
+
+/// <summary>
+/// helper class to be able to serialize a list of experiments
+/// </summary>
 [XmlRoot("ListOfExperiments")]
 public class ListOfExperiments
 {
