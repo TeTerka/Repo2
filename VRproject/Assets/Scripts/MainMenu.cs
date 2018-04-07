@@ -28,7 +28,7 @@ public class MainMenu : MonoBehaviour {
     /// <summary>
     /// switch to the "create experiment" menu page
     /// </summary>
-    /// <param name="typeName">experiment type</param>
+    /// <param name="typeName">type of experiment that will be created there</param>
     public void OnCreateExpClick(string typeName) 
     {
         MenuLogic.instance.expMenuCanvas.SetActive(true);
@@ -38,7 +38,7 @@ public class MainMenu : MonoBehaviour {
 
     private void Start()
     {
-        //create a button for each puzzle type
+        //create a button for each existing puzzle type
         foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
         {
             AbstractPuzzle p = puzzleType;
@@ -49,20 +49,3 @@ public class MainMenu : MonoBehaviour {
     }
 }
 
-
-
-
-
-
-/*! \mainpage My Personal Index Page
- *
- * \section intro_sec Introduction
- *
- * This is the introduction.
- *
- * \section install_sec Installation
- *
- * \subsection step1 Step 1: Opening the box
- *
- * etc...
- */

@@ -7,18 +7,25 @@
 /// <remarks>
 /// object must have a rigidbody component and tag "GrabableObject" and two collider components (one has IsTrigger=true, other one false)
 /// </remarks>
-public class GragableObject:MonoBehaviour{
+public class GrabableObject:MonoBehaviour{
 
-    public ControllerScript CurrentController { get; private set; }//controller currently holding this object
+    /// <summary>controller currently holding this object</summary>
+    public ControllerScript CurrentController { get; private set; }
+
+    /// <summary>true = this object is not held by any controller</summary>
     public bool IsFree()
     { return CurrentController == null; }
 
-    Rigidbody rb;
-    FixedJoint fj;
+    private Rigidbody rb;
+    private FixedJoint fj;
 
+    /// <summary>the collider for collision computations</summary>
     public BoxCollider PhysicsCollider { get; private set; }
+
+    /// <summary>the collider for detecting atemps to grab this object (IsTrigger should be set to true)</summary>
     public BoxCollider GrabCollider { get; private set; }
 
+    /// <summary>true = this object currently cannot move (IsKinematic on its Rigidbody is set to true)</summary>
     public bool IsFrozen { get; private set; }
 
     public virtual void Awake()
@@ -84,7 +91,7 @@ public class GragableObject:MonoBehaviour{
         //disconnect
         DisconnectFromController();
         //throw
-        if (!controller.isFake && applyVelocity)
+        if (applyVelocity)
         {
             rb.velocity = controller.Velocity;
             rb.angularVelocity = controller.AngularVelocity;
@@ -143,17 +150,4 @@ public class GragableObject:MonoBehaviour{
             CurrentController.StopHoldingIt();
         }
     }
-}
-
-
-/// <summary>
-/// interface for objects that are not grabable but still want some interactions with contorllers, IInteractible objects should have tag "InteractibleObject"
-/// </summary>
-public interface IInteractibleObject
-{
-    /// <summary>
-    /// what should happen when the hair trigger on Vive controller is pressed while touching this object
-    /// </summary>
-    /// <param name="controller">controller that pressed the trigger</param>
-    void OnTriggerPressed(ControllerScript controller);
 }

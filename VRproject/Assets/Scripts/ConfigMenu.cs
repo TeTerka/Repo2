@@ -5,24 +5,24 @@ using UnityEngine.UI;
 /// <summary>
 /// Controls for the "create configuration" menu page
 /// </summary>
-public class CofigMenu : MonoBehaviour {
+public class ConfigMenu : MonoBehaviour {
 
     [Header("References to UI elements")]
-    public Toggle npcToggle;
-    public Toggle tutorialToggle;
-    public Dropdown numberOfPuzlesDropwdown;
-    public InputField configNameField;
-    public GameObject scrollViewContent;
-    public GameObject errorText;
-    public InputField timeLimitField;
-    public Dropdown modelDropdown;
-    public Dropdown behaviourDropdown;
-    public ExpMenu em;
+    [SerializeField] private Toggle npcToggle;
+    [SerializeField] private Toggle tutorialToggle;
+    [SerializeField] private Dropdown numberOfPuzlesDropwdown;
+    [SerializeField] private InputField configNameField;
+    [SerializeField] private GameObject scrollViewContent;
+    [SerializeField] private GameObject errorText;
+    [SerializeField] private InputField timeLimitField;
+    [SerializeField] private Dropdown modelDropdown;
+    [SerializeField] private Dropdown behaviourDropdown;
+    [SerializeField] private ExpMenu em;
 
     private List<GameObject> puzzlePanels = new List<GameObject>();
 
     [Header("to distinguish various puzzle types")]
-    public Text headline;
+    [SerializeField] private Text headline;
     private AbstractPuzzle currentPuzzleType;
 
     /// <summary>
@@ -105,11 +105,8 @@ public class CofigMenu : MonoBehaviour {
     }
 
     /// <summary>
-    /// action for "Save" button
+    /// action for "Save" button, tries to create a new configuration containing the created puzzles and add it to the list of available configurations
     /// </summary>
-    /// <remarks>
-    /// tries to create a new configuration containing the created puzzles and add it to the list of available configurations
-    /// </remarks>
     public void OnSaveClick()
     {
         //create only if everything is correctly filled out
@@ -141,7 +138,7 @@ public class CofigMenu : MonoBehaviour {
             {
                 ok = false;
             }
-            if(!currentPuzzleType.CheckFillingCorrect(q, i))
+            if(!currentPuzzleType.CheckFillingCorrect(q, i))//custom validity check
             {
                 ok = false;
             }
@@ -157,7 +154,7 @@ public class CofigMenu : MonoBehaviour {
             errorText.SetActive(false);
         }
 
-        //create configuration (class)
+        //create configuration
         Configuration c = new Configuration();
 
         c.puzzleType = currentPuzzleType.typeName;
@@ -167,7 +164,7 @@ public class CofigMenu : MonoBehaviour {
         c.timeLimit = time;
         for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
         {
-            Puzzle p = new Puzzle();
+            PuzzleData p = new PuzzleData();
             GameObject q = puzzlePanels[i];
             p = currentPuzzleType.CreatePuzzle(q, i);
             p.name = currentPuzzleType.GetPuzzleName(q);
@@ -189,7 +186,7 @@ public class CofigMenu : MonoBehaviour {
     }
 
     /// <summary>
-    /// action for "Cancel" button
+    /// action for "Cancel" button, switches back to expMenu
     /// </summary>
     public void OnCancelInConfigMenuClicked()
     {

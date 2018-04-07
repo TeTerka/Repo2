@@ -262,6 +262,7 @@ public class FileBrowser
                 miniGens.AddRange(Directory.GetFiles(m_currentDirectory, s));
             }
             m_files = miniGens.ToArray();
+
             var nonMatchingFiles = new List<string>();
             foreach (string filePath in Directory.GetFiles(m_currentDirectory))
             {
@@ -382,8 +383,8 @@ public class FileBrowser
         GUILayout.EndScrollView();
         GUILayout.BeginHorizontal();
 
+        //my stuff
         GUILayout.Label("choose drive:");
-        //my stuff.......................................................
         foreach (string str in drives)
         {
             if (Directory.Exists(str))
@@ -395,7 +396,7 @@ public class FileBrowser
             }
 
         }
-        //end of..................................................my stuff
+
 
         GUILayout.FlexibleSpace();
 

@@ -15,7 +15,7 @@ public class ExpMenu : MonoBehaviour {
     public GameObject chosenConfigScrollViewContent;
     public GameObject availableConfigScrollViewContent;
     private GameObject InnerScrollViewContent;
-    public CofigMenu cm;
+    public ConfigMenu cm;
 
     [Header("PopupPanel")]
     public GameObject popupPanel;
@@ -29,7 +29,7 @@ public class ExpMenu : MonoBehaviour {
     public Text headline;
     private AbstractPuzzle currentPuzzleType;
 
-    //lists...
+
     private List<Configuration> chosenConfigs = new List<Configuration>();
     private List<Button> chosenConfigInfoButtons = new List<Button>();
 

@@ -7,9 +7,10 @@
 
 public class ControllerScript : MonoBehaviour {
 
-    public bool isLeft;//Logger needs to know which hand is which
-    public bool isFake;//for development without VR headset,......does not work anymore+++++++++++++++++++++++
-    public Transform fingerTip;//the sphere defining the controller interaction range
+    /// <summary>to determin which hand is left and which is right (the Logger needs to know this)</summary>
+    public bool isLeft;
+    /// <summary>the sphere defining the controller interaction range(the Logger needs to know this)</summary>
+    public Transform fingerTip;
 
     //getting information from Vive controllers
     private SteamVR_TrackedObject trackedObj;
@@ -18,12 +19,19 @@ public class ControllerScript : MonoBehaviour {
         get { return SteamVR_Controller.Input((int)trackedObj.index); }
     }
 
-    //cashed information from Vive controllers
+    /// <summary>cashed info about Vive controller velocity</summary>
     public Vector3 Velocity { get; private set; }
+
+    /// <summary>cashed info about Vive controller angular velocity</summary>
     public Vector3 AngularVelocity { get; private set; }
 
-    private GragableObject heldObject;//object held by this controller
-    public void StopHoldingIt()//releasing the object without the call of OnTriggerReleased
+
+    private GrabableObject heldObject;//object held by this controller
+
+    /// <summary>
+    /// releasing the object without the call of OnTriggerReleased
+    /// </summary>
+    public void StopHoldingIt()
     {
         heldObject = null;
     }
@@ -36,54 +44,28 @@ public class ControllerScript : MonoBehaviour {
     void FixedUpdate()
     {
         //update cashed info
-        if (!isFake)
-        {
-            Velocity = Controller.velocity;
-            AngularVelocity = Controller.angularVelocity;
-        }
+        Velocity = Controller.velocity;
+        AngularVelocity = Controller.angularVelocity;
     }
 
     void Update()
     {
-        //check input for trigger up/down
-        if (!isFake)
+        //check input for trigger down
+        //try to interact with something only if this controller is not currently holding anything
+        if (Controller.GetHairTriggerDown())
         {
-            //try to interact with something only if this controller is not currently holding anything
-            if (Controller.GetHairTriggerDown())
+            if (heldObject == null)
             {
-                if (heldObject == null)
-                {
-                    FindInteractibleObject();
-                }
-            }
-            //if this controller is holding something, drop it
-            if (Controller.GetHairTriggerUp())
-            {
-                if (heldObject != null)
-                {
-                    ReleaseObject();
-                }
+                FindInteractibleObject();
             }
         }
-        else//dont have vive during development+++++++++++++++++++++++++++++++++++++++++++++++
+        //check input for trigger up
+        //if this controller is holding something, drop it
+        if (Controller.GetHairTriggerUp())
         {
-            if (Input.GetMouseButtonDown(0))
+            if (heldObject != null)
             {
-                if (heldObject == null)
-                {
-                    FindInteractibleObject();
-                }
-            }
-
-            if (Input.GetMouseButtonUp(0))
-            {
-                if (heldObject != null)
-                {
-                    if (heldObject != null)
-                    {
-                        ReleaseObject();
-                    }
-                }
+                ReleaseObject();
             }
         }
     }
@@ -99,7 +81,7 @@ public class ControllerScript : MonoBehaviour {
         {
             if (obj.isTrigger && obj.CompareTag("GrabableObject") )
             {
-                heldObject = obj.GetComponent<GragableObject>();
+                heldObject = obj.GetComponent<GrabableObject>();
                 if(heldObject!=null)
                     heldObject.OnTriggerPressed(this);
                 return;
@@ -107,8 +89,9 @@ public class ControllerScript : MonoBehaviour {
 
             if(obj.CompareTag("InteractibleObject"))
             {
-                if(obj.GetComponent<IInteractibleObject>()!=null)
-                    obj.GetComponent<IInteractibleObject>().OnTriggerPressed(this);
+                IInteractibleObject iio = obj.GetComponent<IInteractibleObject>();
+                if (iio!=null)
+                    iio.OnTriggerPressed(this);
                 return;
             }
         }

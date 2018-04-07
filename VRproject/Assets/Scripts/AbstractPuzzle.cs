@@ -2,18 +2,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Every puzzle must inherit from this class
+/// Every puzzle type must inherit from this class
 /// </summary>
 public abstract class AbstractPuzzle : MonoBehaviour {
 
-    /// <summary>
-    /// name of this puzzle type
-    /// </summary>
-    public string typeName;//++++++++++++
+    /// <summary>name of this puzzle type</summary>
+    public string typeName;
 
-    /// <summary>
-    /// list of items which should preserve original size during the scaling of the room
-    /// </summary>
+    /// <summary>list of items which should preserve original size during the scaling of the room</summary>
     public List<Transform> nonScalables;
 
     //----------------------------------------------
@@ -63,7 +59,7 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     //----------------------------------------------
 
     /// <summary>
-    /// reference to customized copy of the asset "PuzzleInfoPanel"
+    /// reference to customized copy of the asset "PuzzleInfoPanel", it is for displaying info about a puzzle
     /// </summary>
     public GameObject infoPanelPrefab;
 
@@ -73,10 +69,10 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     /// <param name="panel">an instance of infoPanelPrefab</param>
     /// <param name="puzzle"></param>
     /// <returns>true = <paramref name="panel"/> was filled without any errors (no missing files etc.)</returns>
-    public abstract bool FillTheInfoPanel(GameObject panel, Puzzle puzzle);
+    public abstract bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle);
 
     /// <summary>
-    /// reference to customized copy of the asset "PuzzlePanel"
+    /// reference to customized copy of the asset "PuzzlePanel", it is for entering info about a puzzle
     /// </summary>
     public GameObject interactibleInfoPanelPrefab;
 
@@ -96,12 +92,12 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     public abstract bool CheckFillingCorrect(GameObject panel, int i);
 
     /// <summary>
-    /// creates new instance of the class Puzzle filled with informations gathered from <paramref name="panel"/>
+    /// creates new instance of the class Puzzle filled with information gathered from <paramref name="panel"/>
     /// </summary>
     /// <param name="panel">an instance of interactibleInfoPanelPrafab</param>
     /// <param name="i">position of <paramref name="panel"/> in the list in "Create Configuration" menu</param>
     /// <returns>the new instance of Puzzle</returns>
-    public abstract Puzzle CreatePuzzle(GameObject panel, int i);
+    public abstract PuzzleData CreatePuzzle(GameObject panel, int i);
 
     /// <summary>
     /// get the name the experimentor set in the interactibleInfoPanel
@@ -115,5 +111,10 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     //----------------------------------------------
     //things needed for replaying the experiment
     //----------------------------------------------
+
+    /// <summary>
+    /// decides which action the <paramref name="atoms"/> describe, checks if such an action exists and then simulates it
+    /// </summary>
+    /// <param name="atoms">one parsed line from a log file</param>
     public abstract void Simulate(string[] atoms);
 }

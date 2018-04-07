@@ -8,7 +8,7 @@ using UnityEngine;
 /// <remarks>
 /// must have an Animator component (for the respawn animation)
 /// </remarks>
-public class PuzzleTile : GragableObject {
+public class PuzzleTile : GrabableObject {
 
     //references
     private Transform grid;

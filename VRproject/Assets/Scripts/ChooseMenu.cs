@@ -28,7 +28,7 @@ public class ChooseMenu : MonoBehaviour {
     public Button expNameButtonPrefab;
     public GameObject expConfInfoPanelPrefab;
 
-    private List<Button> expButtons = new List<Button>();
+    private List<Button> expButtons = new List<Button>();//buttons representing available experiments
     private List<GameObject> expInfoPanels = new List<GameObject>();
     private bool loadSuccessful;
     private string missingStuff;
@@ -237,7 +237,7 @@ public class ChooseMenu : MonoBehaviour {
     }
 
     /// <summary>
-    /// action for "Cancel" button
+    /// action for "Cancel" button, switches back to main menu
     /// </summary>
     public void OnCancelInChooseMenuClicked()
     {
@@ -275,7 +275,7 @@ public class ChooseMenu : MonoBehaviour {
     }
 
     /// <summary>
-    /// Starts replaying the selected logfile
+    /// starts replaying the selected logfile
     /// </summary>
     /// <param name="path">path to the selected file</param>
     protected void FileSelectedCallback(string path)
@@ -355,7 +355,7 @@ public class ChooseMenu : MonoBehaviour {
             e.name = "Replay " + id + ", " + name;
             e.puzzleType = c.puzzleType;
             e.configs = new List<Configuration> { c };
-            //start that experiment in replay mode (so that the rest of the log file will be used to simulate player&coordinator actions)
+            //start that experiment in replay mode (so that the rest of the log file will be used to simulate player&experomentor actions)
             NewManager.instance.StartExperiment(e, false, true);
             MenuLogic.instance.chooseMenuCanvas.SetActive(false);
             MenuLogic.instance.spectatorCanvas.SetActive(true);

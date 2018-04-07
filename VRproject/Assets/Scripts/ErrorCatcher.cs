@@ -13,12 +13,13 @@ public class ErrorCatcher : MonoBehaviour {
     public GameObject errorCanvas;
     public Text errorDescription;
 
-    public bool catchedError;
+    /// <summary>states whether any error was catched</summary>
+    public bool CatchedError { get; private set; }
 
     private void Awake()
     {
         instance = this;
-        catchedError = false;
+        CatchedError = false;
     }
 
     /// <summary>
@@ -27,7 +28,7 @@ public class ErrorCatcher : MonoBehaviour {
     /// <param name="errorText">the displayed text</param>
     public void Show(string errorText)
     {
-        catchedError = true;
+        CatchedError = true;
 
         errorCanvas.SetActive(true);
         errorDescription.text = errorText;

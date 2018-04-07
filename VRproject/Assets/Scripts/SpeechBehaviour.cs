@@ -4,9 +4,9 @@ using UnityEngine.UI;
 
 
 /// <summary>
-/// allows talking of the npc during an animation state
+/// allows talking of the virtual agent during an animation state
 /// </summary>
-public class WelcomeSpeechBehaviour : StateMachineBehaviour {
+public class SpeechBehaviour : StateMachineBehaviour {
 
     private GameObject subtitlesCanvas;
     private Text subtitleText;
@@ -15,11 +15,14 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
     private string npcName;
     private AudioSource mouth;
 
+    /// <summary>one sentence will be dispalyed for this time (in seconds)</summary>
     public int timeForASentence;
+    /// <summary>list of sentences to display</summary>
     public List<Sentence> sentences = new List<Sentence>();
+    /// <summary>true = play also the audio files attached to each sentence</summary>
     public bool useSound;
 
-    NewManager mngr;
+    private NewManager mngr;
 
     private void Awake()
     {
@@ -47,7 +50,7 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
         //manage sound
         if (useSound)
         {
-            mouth = mngr.theNpc.GetComponent<AudioSource>();
+            mouth = mngr.TheNpc.GetComponent<AudioSource>();
             if (mouth == null)
             {
                 useSound = false;
@@ -57,7 +60,7 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
             if(mouth.clip==null)
             {
                 useSound = false;
-                ErrorCatcher.instance.Show("error, audio clip found in sentences[0]");
+                ErrorCatcher.instance.Show("error, audio clip not found in sentences[0]");
             }
             mouth.Play();
         }
@@ -69,13 +72,13 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo animatorStateInfo, int layerIndex)
     {
-        //update the countdown, display apropriate sentence
+        //update the countdown, display appropriate sentence
         time += Time.deltaTime;
         if(i<sentences.Count && time>=timeForASentence)
         {
             if(useSound)
             {
-                mouth = mngr.theNpc.GetComponent<AudioSource>();
+                mouth = mngr.TheNpc.GetComponent<AudioSource>();
                 if (mouth == null)
                 {
                     useSound = false;
@@ -105,7 +108,7 @@ public class WelcomeSpeechBehaviour : StateMachineBehaviour {
 
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        //disable the subtitle canvas (but only if nobody declared he needs it - because of state blending OnStateExit of old state happens AFTER OnStateEnter of the next state)
+        //disable the subtitle canvas (but only if nobody declared he needs it - because of state blending, the OnStateExit of old state happens AFTER OnStateEnter of the next state)
         if (mngr.whoWantsSubtitles == -1 || mngr.whoWantsSubtitles == stateInfo.shortNameHash)
         {
             subtitlesCanvas.SetActive(false);

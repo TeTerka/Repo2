@@ -7,10 +7,13 @@ using UnityEngine;
 public class UImanagerScript : MonoBehaviour {
 
     //switching cameras
+
+    /// <summary> list of available cameras in the virtual room </summary>
     public List<GameObject> cams = new List<GameObject>();
     private int camCount;
     private int currentCam;
 
+    /// <summary> popup panel with Yes and No buttons </summary>
     public GameObject popupPanel;
     private bool timeStopped = false;
 
@@ -49,7 +52,7 @@ public class UImanagerScript : MonoBehaviour {
     }
 
     /// <summary>
-    /// cycling through available cameras
+    /// action for "ChangeCamera" button, cycles through available cameras
     /// </summary>
     public void ChangeCamButtonClick()
     {
@@ -71,7 +74,7 @@ public class UImanagerScript : MonoBehaviour {
     }
 
     /// <summary>
-    /// disables the popup panel
+    /// action for "No" button on the popup panel, disables the popup panel
     /// </summary>
     public void NoButtonClick()
     {
@@ -79,7 +82,7 @@ public class UImanagerScript : MonoBehaviour {
     }
 
     /// <summary>
-    /// switches the phase without testing if current phase was compeled
+    /// action for "Yes" button on the popup panel, switches the phase without testing if current phase was compeled
     /// </summary>
     public void YesButtonClick()
     {

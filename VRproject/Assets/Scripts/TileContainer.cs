@@ -1,26 +1,32 @@
 ﻿using UnityEngine;
 
-
 /// <summary>
-/// represents one field of the grid
+/// represents one field of the grid in CubePuzzle
 /// </summary>
-public class TileContainer : MonoBehaviour {
+public class TileContainer : MonoBehaviour
+{
 
-    //charakteristics
-    public int ContainerIndex { get; private set; }//containers numbered from down left corner, see example (for size 3x5):
-    // ---------------------
-    // |10 |11 |12 |13 |14 |
-    // ---------------------
-    // | 5 | 6 | 7 | 8 | 9 |
-    // ---------------------
-    // | 0 | 1 | 2 | 3 | 4 |
-    // ---------------------
+    /// <summary>
+    /// number defining the location of this container
+    /// </summary>
+    /// <remarks>
+    /// containers numbered from down left corner, example for size 3x4:
+    /// <table>
+    /// <tr><td>8<td>9<td>10<td>11
+    /// <tr><td>4<td>5<td>6<td>7
+    /// <tr><td>0<td>1<td>2<td>3
+    /// </table>
+    /// </remarks>
+    public int ContainerIndex { get; private set; }
+
 
     //references
-    private Transform grid;//position of the grid
+    private Transform grid;//position of the whole grid
     private CubePuzzle cp;
     //state
+    /// <summary>states whether there is a cube placed at this container</summary>
     public bool isEmpty = true;
+    /// <summary>states whether the cube placed at this container should be at this position (and is correctly rotated)</summary>
     public bool Matches { get; set; }
 
     //highliting
@@ -79,7 +85,7 @@ public class TileContainer : MonoBehaviour {
     /// <param name="tileIndex"></param>
     public void SetMatches(Transform tile, int tileIndex)
     {
-        int n = cp.ModelPictureNumber;//always zero (because we use now only one face of the cube)
+        int n = cp.ModelPictureNumber;//find out which side of the cube should be facing up
         Matches = (CheckIndex(tileIndex) && CheckFace(tile, n) && CheckFaceRotation(tile, n));
     }
 

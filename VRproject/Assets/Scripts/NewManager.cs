@@ -14,19 +14,38 @@ public class NewManager : MonoBehaviour {
     public static NewManager instance;
 
     [Header("puzzle types")]
+    /// <summary>list of all existing puzzle types</summary>
     public List<AbstractPuzzle> puzzleTypes = new List<AbstractPuzzle>();
 
 
     //information about current state
     private Experiment activeExperiment = null;
+
+    /// <summary>which puzzle type is currently being used</summary>
     public AbstractPuzzle CurrentPuzzle { get; private set; }
+
+    /// <summary>which configuration is currently being used</summary>
     public Configuration ActiveConfig { get; private set; }
+
+    /// <summary>which puzzle phase are we currently in (-1 if in start or tutorial phase)</summary>
     public int ActivePuzzleIndex { get; private set; }
+
+    /// <summary>true = we are now in start phase</summary>
     public bool InStart { get; private set; }
+
+    /// <summary>true = we are now in tutorial phase</summary>
     public bool InTut { get; private set; }
+
+    /// <summary>true = current phase was already finished</summary>
     public bool PhaseFinished { get; private set; }
+
+    /// <summary>true = we are only in test mode (no data will be saved)</summary>
     public bool InTestMode { get; private set; }
+
+    /// <summary>true = we are in replay mode (no control available, only reads the log file)</summary>
     public bool InReplayMode { get; private set; }
+
+    /// <summary>true = we are currently between two phases</summary>
     public bool Switching { get; private set; }
 
     [Header("model picture")]
@@ -70,11 +89,13 @@ public class NewManager : MonoBehaviour {
     private List<Button> configButtons = new List<Button>();
     public Button configNameButtonPrafab;
 
-    [Header("for changing NPC models and behaviours")]
-    public GameObject theNpc;
+    [Header("for changing agent models and behaviours")]
     public Transform npcPoint;
     public List<NpcModel> npcModels = new List<NpcModel>();
     public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
+
+    /// <summary>reference to the currently used virtual agent</summary>
+    public GameObject TheNpc { get; private set; }
 
     [Header("for talking during animation")]
     public string npcName = "";
@@ -106,7 +127,7 @@ public class NewManager : MonoBehaviour {
     }
 
     /// <summary>
-    /// scale the virtual room so that it is the same size as the real room
+    /// scale the virtual room so that the part where player should walk is the same size as the real room
     /// </summary>
     private void ScaleRoomToFitPlayArea()
     {
@@ -148,7 +169,7 @@ public class NewManager : MonoBehaviour {
     /// start experiement <paramref name="e"/> in selected mode
     /// </summary>
     /// <param name="e">starting experiment</param>
-    /// <param name="justTesting">true = test mode (no data seving)</param>
+    /// <param name="justTesting">true = test mode (no data saving)</param>
     /// <param name="justReplay">true = replay mode (replaying from a logfile)</param>
     public void StartExperiment(Experiment e,bool justTesting,bool justReplay)
     {
@@ -165,8 +186,7 @@ public class NewManager : MonoBehaviour {
             if (puzzleType.typeName == e.puzzleType)
                 CurrentPuzzle = puzzleType;
         }
-
-        if(CurrentPuzzle = null)
+        if(CurrentPuzzle == null)
         {
             ErrorCatcher.instance.Show("Error, puzzle type "+e.puzzleType+" is not available.");
         }
@@ -250,7 +270,7 @@ public class NewManager : MonoBehaviour {
             phaseLabels.Add(q);
         }
 
-        //prepare npc
+        //prepare the virtual agent
         if(c.withNPC)
         {
             NpcModel nm = null;
@@ -278,13 +298,14 @@ public class NewManager : MonoBehaviour {
         }
         else
         {
-            theNpc = null;
+            TheNpc = null;
         }
 
         //puzzle specific actions
         CurrentPuzzle.StartConfig(c);
 
         originalScale = imageHolder.localScale;
+        //go to the start phase of this configuration
         StartStart();
     }
 
@@ -349,10 +370,10 @@ public class NewManager : MonoBehaviour {
             playeridInputField.interactable = true;
         }
 
-        //animation of the NPC
-        if (theNpc != null)
+        //animation of the virtal agent
+        if (TheNpc != null)
         {
-            theNpc.GetComponent<Animator>().SetTrigger("StartStart");
+            TheNpc.GetComponent<Animator>().SetTrigger("StartStart");
         }
 
         if (InReplayMode)
@@ -361,6 +382,9 @@ public class NewManager : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// ends start phase
+    /// </summary>
     private void FinishStartPhase()
     {
         //logging - creating a new logfile
@@ -419,14 +443,14 @@ public class NewManager : MonoBehaviour {
         CurrentPuzzle.StartTut();
 
         //animation of the NPC
-        if (theNpc != null)
+        if (TheNpc != null)
         {
-            theNpc.GetComponent<Animator>().SetTrigger("StartTutorial");
+            TheNpc.GetComponent<Animator>().SetTrigger("StartTutorial");
         }
     }
 
     /// <summary>
-    /// end tutorial phase
+    /// ends tutorial phase
     /// </summary>
     private void FinishTutorial()
     {
@@ -460,8 +484,8 @@ public class NewManager : MonoBehaviour {
         countingDown = true;
 
         //play PuzzleStart animation
-        if(theNpc!=null)
-            theNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
+        if(TheNpc!=null)
+            TheNpc.GetComponent<Animator>().SetTrigger("StartNewPuzzle");
 
     }
 
@@ -484,7 +508,7 @@ public class NewManager : MonoBehaviour {
         if ((!InTestMode)&&(!InReplayMode))
         {
             string dataToSave;
-            Puzzle puzzle = ActiveConfig.puzzles[ActivePuzzleIndex];
+            PuzzleData puzzle = ActiveConfig.puzzles[ActivePuzzleIndex];
             if (!PhaseFinished)//if this was a forced phase finish, instead of time and score "invalid" will be saved
             {
                 dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
@@ -555,12 +579,12 @@ public class NewManager : MonoBehaviour {
 
     
     /// <summary>
-    /// if current phase is marked as finished or <paramref name="skipCondition"/>=true this sitches to next phase, othervise creates a popup panle "Do you really want to skip?"
+    /// if current phase is marked as finished or <paramref name="skipCondition"/>=true this switches to next phase, othervise creates a popup panle "Do you really want to skip?"
     /// </summary>
     /// <param name="skipCondition">true = do not check if phase is finished, just switch to the next one</param>
     public void TrySwitchPhase(bool skipCondition)
     {
-        if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled and unique
+        if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled, valid and unique
         {
             if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))
             {
@@ -863,11 +887,11 @@ public class NewManager : MonoBehaviour {
 
 
     //--------------------------------------------------------------------------------------------------------------------------
-    // THINGS FOR THE NPC
+    // THINGS FOR THE VIRTUAL AGENT
     //--------------------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// creates a NPC from <paramref name="model"/> and <paramref name="bahaviour"/>
+    /// creates a virtual agent from <paramref name="model"/> and <paramref name="bahaviour"/>
     /// </summary>
     /// <param name="model"></param>
     /// <param name="bahaviour"></param>
@@ -875,56 +899,19 @@ public class NewManager : MonoBehaviour {
     {
         GameObject npc = Instantiate(model.modelObject, npcPoint.position, npcPoint.rotation);
         npc.GetComponent<Animator>().runtimeAnimatorController = bahaviour.behaviourAnimController as RuntimeAnimatorController;
-        theNpc = npc;
+        TheNpc = npc;
         npcName = model.modelName;
     }
 
     /// <summary>
-    /// destroyes currently used NPC
+    /// destroyes currently used virtual agent
     /// </summary>
     private void DestroyCharacter()
     {
-        Destroy(theNpc);
-        theNpc = null;
+        Destroy(TheNpc);
+        TheNpc = null;
         npcName = "";
     }
 
 }
 
-
-
-/// <summary>
-/// class attaching a name to a NPC model, which is used for selecting the model in menu
-/// </summary>
-[System.Serializable]
-public class NpcModel
-{
-    public string modelName;
-    public GameObject modelObject;
-}
-
-
-
-/// <summary>
-/// class attaching a name to a NPC behaviour (NPC animator), which is used for selecting the behaviour in menu
-/// </summary>
-[System.Serializable]
-public class NpcBeahviour
-{
-    public string bahaviourName;
-    public RuntimeAnimatorController behaviourAnimController;
-}
-
-
-
-/// <summary>
-/// class for WelcomeSpeechBehaviour containing info abou one line o text
-/// </summary>
-[System.Serializable]
-public class Sentence
-{ 
-    //+++++++++++++++++++++++++++++++++++++podivne komentare!!!
-    public string text;///<the sentence
-    public bool replaceAlex;///<if true, replace "Alex" in the sentence by the name of currently used NPC
-    public AudioClip audio;///<optional, used only if useSound==true in WelcomeSpeechBehaviour
-}

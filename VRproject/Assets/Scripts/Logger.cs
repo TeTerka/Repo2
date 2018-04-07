@@ -28,6 +28,7 @@ public class Logger : MonoBehaviour {
     public Text text3;
 
     //for creating logs
+    /// <summary>path to the currently used log file</summary>
     public string PathToLogFile { get; private set; }
     private bool logAllowed = false;
 
@@ -38,7 +39,7 @@ public class Logger : MonoBehaviour {
 
     void Start()
     {
-        //deaktivate things visible only in replay mode
+        //deactivate things visible only in replay mode
         text1.gameObject.SetActive(false);
         text2.gameObject.SetActive(false);
         text3.gameObject.SetActive(false);
@@ -116,7 +117,7 @@ public class Logger : MonoBehaviour {
         {
             if (!File.Exists(PathToLogFile))
             {
-                ErrorCatcher.instance.Show("Wanted to read a logfile but file " + PathToLogFile + " does not exist");
+                ErrorCatcher.instance.Show("Wanted to read a logfile but file " + PathToLogFile + " does not exist.");
                 return;
             }
             string s;

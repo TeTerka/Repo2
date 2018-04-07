@@ -7,7 +7,7 @@ using UnityEngine;
 public class ButtonScript : MonoBehaviour
 {
     private bool isClicking = false;
-    Animator animator;
+    private Animator animator;
     private void Start()
     {
         animator = GetComponent<Animator>();
@@ -38,7 +38,7 @@ public class ButtonScript : MonoBehaviour
     }
 
     /// <summary>
-    /// prematurely end the phase and checks correctness
+    /// prematurely ends the phase and checks correctness
     /// </summary>
     public void ClickEffect()
     {

@@ -2,7 +2,7 @@
 
 
 /// <summary>
-/// represents a pipe in the pipe puzzle
+/// represents a pipe in the PipePuzzle
 /// </summary>
 /// <remarks>
 /// <para>can rotate itself 90 degrees clockwise and has refences to water particle systems</para>

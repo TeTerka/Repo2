@@ -54,6 +54,8 @@ public class CubePuzzle : AbstractPuzzle
     public GameObject configMenuBlockingPanel;
     private List<string> texturePaths = new List<string>();
     public GameObject table;
+    private List<string> widths = new List<string>();
+    private List<string> heigths = new List<string>();
 
     //containers numbered from down left corner, see example (for size 3x5):
     // ---------------------
@@ -103,9 +105,9 @@ public class CubePuzzle : AbstractPuzzle
     //for preparation of the puzzle in menu
     //------------------------------------------------------------------------------------------
 
-    public override Puzzle CreatePuzzle(GameObject panel, int i)
+    public override PuzzleData CreatePuzzle(GameObject panel, int i)
     {
-        Puzzle p = new Puzzle();
+        PuzzleData p = new PuzzleData();
         List<Dropdown> droplist = new List<Dropdown>();
         panel.GetComponentsInChildren<Dropdown>(droplist);
         p.heigthpx = droplist[1].value + 1;
@@ -150,13 +152,13 @@ public class CubePuzzle : AbstractPuzzle
             return true;
         }
     }
-    public override bool FillTheInfoPanel(GameObject panel, Puzzle puzzle)
+    public override bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
     {
         panel.GetComponentInChildren<Text>().text = puzzle.widthpx + " x " + puzzle.heigthpx;
         List<Image> images = new List<Image>();
         panel.GetComponentsInChildren<Image>(images);
         images[1].sprite = MenuLogic.instance.LoadNewSprite(puzzle.pathToImage);
-        if (images[1].sprite == null)//neboli if picture loadig failed
+        if (images[1].sprite == null)//aka if picture loadig failed
         {
             images[1].sprite = MenuLogic.instance.missingImage;
             return false;
@@ -166,6 +168,12 @@ public class CubePuzzle : AbstractPuzzle
 
     public override void PrepareInteractibleInfoPanel(GameObject panel, int i)
     {
+        List<Dropdown> droplist = new List<Dropdown>();
+        panel.GetComponentsInChildren<Dropdown>(droplist);
+        droplist[0].ClearOptions();
+        droplist[0].AddOptions(widths);
+        droplist[1].ClearOptions();
+        droplist[1].AddOptions(heigths);
         panel.GetComponentInChildren<Button>().onClick.AddListener(delegate { OnSelectPuzzleImageClick(panel, i); });
         panel.GetComponentInChildren<InputField>().onValueChanged.AddListener(delegate { panel.GetComponentInChildren<InputField>().image.color = Color.white; });
         texturePaths.Add(null);
@@ -238,23 +246,14 @@ public class CubePuzzle : AbstractPuzzle
     /// <param name="maxHeigth"></param>
     private void SetNumberOfPuzzlesDropdownContent(int maxWidth, int maxHeigth)
     {
-        //podle toho nastavi dropdowny u nastavovani sirek/vysek obrazku
-        List<string> widths = new List<string>();
         for (int i = 1; i <= maxWidth; i++)
         {
             widths.Add(i.ToString());
         }
-        List<string> heigths = new List<string>();
         for (int i = 1; i <= maxHeigth; i++)
         {
             heigths.Add(i.ToString());
         }
-        List<Dropdown> droplist = new List<Dropdown>();
-        interactibleInfoPanelPrefab.GetComponentsInChildren<Dropdown>(droplist);
-        droplist[0].ClearOptions();
-        droplist[0].AddOptions(widths);
-        droplist[1].ClearOptions();
-        droplist[1].AddOptions(heigths);
     }
 
 
@@ -319,7 +318,7 @@ public class CubePuzzle : AbstractPuzzle
         //create textures for puzzles
         for (int i = 0; i < c.puzzles.Count; i++)
         {
-            Puzzle puzzle = c.puzzles[i];
+            PuzzleData puzzle = c.puzzles[i];
             Texture2D tt;//texture of the whole model picture
             if ((tt = MenuLogic.instance.LoadTexture(puzzle.pathToImage)) == null)//if loading failed load "missing file" picture
             {
@@ -343,7 +342,7 @@ public class CubePuzzle : AbstractPuzzle
     public override void StartPhase()
     {
         int puzzleIndex = NewManager.instance.ActivePuzzleIndex;
-        Puzzle puzzle = NewManager.instance.ActiveConfig.puzzles[puzzleIndex];
+        PuzzleData puzzle = NewManager.instance.ActiveConfig.puzzles[puzzleIndex];
 
         //scaling of the model picture
         float x = puzzle.widthpx * TileSize * 3f;//=>model picture 3x bigger than the grid

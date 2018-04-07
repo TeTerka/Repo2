@@ -52,7 +52,7 @@ public class MenuLogic: MonoBehaviour {
 
     private void OnApplicationQuit()//before quitting save the list of available experiments
     {
-        if (!ErrorCatcher.instance.catchedError)//if quitting because of an error, do not save anything
+        if (!ErrorCatcher.instance.CatchedError)//if quitting because of an error, do not save anything
         {
             try
             {
@@ -144,97 +144,3 @@ public class MenuLogic: MonoBehaviour {
     }
 }
 
-//-------------------------------------------------------------------------------
-//serializable classes
-//-------------------------------------------------------------------------------
-
-
-/// <summary>
-/// class holding information about a puzzle, used for serialization
-/// </summary>
-public class Puzzle
-{
-    //for cubes
-    public string pathToImage;
-    [XmlArray("spawnPointMix")]
-    [XmlArrayItem("int")]
-    public List<int> spawnPointMix;
-
-    //for pipes
-    [XmlArray("StateField")]
-    [XmlArrayItem("row")]
-    public List<Wrapper> chosenList;
-
-    //for all
-    public int widthpx;
-    public int heigthpx;
-    public string name;
-}
-
-/// <summary>
-/// helper class used because Unity can not serialize 2D lists
-/// </summary>
-[System.Serializable]
-public class Wrapper
-{
-    [XmlArray("states")]
-    [XmlArrayItem("state")]
-    public List<char> row;
-}
-
-/// <summary>
-/// class holding information about one configuration, used for serialization
-/// </summary>
-public class Configuration
-{
-    public string name;
-    public bool withNPC;
-    public bool withTutorial;
-    public int timeLimit;//in seconds
-    public string modelName;
-    public string behaviourName;
-    public string puzzleType;
-
-    [XmlArray("Puzzles")]
-    [XmlArrayItem("Puzzle")]
-    public List<Puzzle> puzzles = new List<Puzzle>();
-}
-
-/// <summary>
-/// helper class to be able to serialize a list of configurations
-/// </summary>
-[XmlRoot("ListOfConfigurations")]
-public class ListOfConfigurations
-{
-    [XmlArray("Confiurations")]
-    [XmlArrayItem("Configuration")]
-    public List<Configuration> configs = new List<Configuration>();
-}
-
-/// <summary>
-/// class holding information about one experiment, used for serialization
-/// </summary>
-public class Experiment
-{
-    public string name;
-    public string resultsFile;
-    public string puzzleType;
-    [XmlArray("Confiurations")]
-    [XmlArrayItem("Configuration")]
-    public List<Configuration> configs = new List<Configuration>();
-    [XmlArray("IDs")]
-    [XmlArrayItem("id")]
-    public List<string> ids = new List<string>();
-}
-
-
-/// <summary>
-/// helper class to be able to serialize a list of experiments
-/// </summary>
-[XmlRoot("ListOfExperiments")]
-public class ListOfExperiments
-{
-    [XmlArray("Experiments")]
-    [XmlArrayItem("Experiment")]
-    public List<Experiment> experiments = new List<Experiment>();
-}

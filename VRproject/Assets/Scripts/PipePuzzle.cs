@@ -20,18 +20,18 @@ public class PipePuzzle : AbstractPuzzle
     public GameObject waterTapPrefab;
     public GameObject pipesHolder;
     public GameObject center;//center of the table
-    public float PipeSize { get; private set; }
+    public float PipeSize { get; private set; }//++++++++++++why not private?
 
     public Transform startSpot;//place for the pipe in start phase
     private List<GameObject> helpPipes = new List<GameObject>();//start and end pipes (the ones that do not rotate)
 
-    public List<List<PipeTile>> PipeList { get; private set; }
+    public List<List<PipeTile>> PipeList { get; private set; }//++++++++++++why not private?
     private bool pathFound = false;
 
     [Header("button on the table")]
     public GameObject buttonPrefab;
     public Transform buttonSpot;
-    public GameObject Button { get; private set; }
+    public GameObject Button { get; private set; }//++++++++++++why not private?
 
     [Header("model pictures")]
     public Texture2D startPicture;
@@ -41,6 +41,8 @@ public class PipePuzzle : AbstractPuzzle
     [Header("stuff for menu settings")]
     public GameObject table;//to be able to get table size
     public Sprite pipeImage;
+    private List<string> widths = new List<string>();
+    private List<string> heigths = new List<string>();
 
     private void Start()
     {
@@ -71,25 +73,17 @@ public class PipePuzzle : AbstractPuzzle
     /// <param name="maxHeigth"></param>
     private void SetNumberOfPuzzlesDropdownContent(int maxWidth, int maxHeigth)
     {
-        List<string> widths = new List<string>();
         for (int i = 1; i <= maxWidth; i++)
         {
             widths.Add(i.ToString());
         }
-        List<string> heigths = new List<string>();
         for (int i = 1; i <= maxHeigth; i++)
         {
             heigths.Add(i.ToString());
         }
-        List<Dropdown> droplist = new List<Dropdown>();
-        interactibleInfoPanelPrefab.GetComponentsInChildren<Dropdown>(droplist);
-        droplist[0].ClearOptions();
-        droplist[0].AddOptions(widths);
-        droplist[1].ClearOptions();
-        droplist[1].AddOptions(heigths);
     }
 
-    public override bool FillTheInfoPanel(GameObject panel, Puzzle puzzle)
+    public override bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
     {
         panel.GetComponentInChildren<Text>().text = puzzle.widthpx + " x " + puzzle.heigthpx;
         List<Image> images = new List<Image>();
@@ -100,6 +94,12 @@ public class PipePuzzle : AbstractPuzzle
 
     public override void PrepareInteractibleInfoPanel(GameObject panel, int i)
     {
+        List<Dropdown> droplist = new List<Dropdown>();
+        panel.GetComponentsInChildren<Dropdown>(droplist);
+        droplist[0].ClearOptions();
+        droplist[0].AddOptions(widths);
+        droplist[1].ClearOptions();
+        droplist[1].AddOptions(heigths);
         panel.GetComponentInChildren<Button>().image.sprite = pipeImage;
         panel.GetComponentInChildren<InputField>().onValueChanged.AddListener(delegate { panel.GetComponentInChildren<InputField>().image.color = Color.white; });
     }
@@ -109,9 +109,9 @@ public class PipePuzzle : AbstractPuzzle
         panel.GetComponentInChildren<Button>().image.color = Color.white;
         return true;
     }
-    public override Puzzle CreatePuzzle(GameObject panel, int i)
+    public override PuzzleData CreatePuzzle(GameObject panel, int i)
     {
-        Puzzle p = new Puzzle();
+        PuzzleData p = new PuzzleData();
 
         List<Dropdown> droplist = new List<Dropdown>();
         panel.GetComponentsInChildren<Dropdown>(droplist);

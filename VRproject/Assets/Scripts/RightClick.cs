@@ -10,6 +10,10 @@ public class RightClick : MonoBehaviour, IPointerClickHandler
     public UnityEvent leftClick;
     public UnityEvent rightClick;
 
+    /// <summary>
+    /// checks which mouse button was used to click on this and invokes apropriate event (leftClick or rightClick)
+    /// </summary>
+    /// <param name="eventData"></param>
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Left)
