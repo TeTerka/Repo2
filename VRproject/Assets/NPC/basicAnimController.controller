@@ -90,10 +90,7 @@ MonoBehaviour:
   - text: "V\xEDtejte v tutorialu."
     replaceAlex: 0
     audio: {fileID: 0}
-  - text: "P\u0159ed sebou vid\xEDte obr\xE1zek,"
-    replaceAlex: 0
-    audio: {fileID: 0}
-  - text: "va\u0161\xEDm c\xEDlem je slo\u017Eit jej z kostek."
+  - text: "\u0158i\u010Fte se instrukcemi na tabuli za mnou."
     replaceAlex: 0
     audio: {fileID: 0}
   - text: "Po dokon\u010Den\xED tutori\xE1lu za\u010Dne prvn\xED \u010D\xE1st experimentu."

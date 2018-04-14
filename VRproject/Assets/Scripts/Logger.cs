@@ -19,13 +19,13 @@ public class Logger : MonoBehaviour {
 
     //for replaying from logs
     private float lastTime;
-    public Text logText;
+    [SerializeField] private Text logText;
     private List<string> actionTexts;
 
     //ui refs
-    public Text text1;
-    public Text text2;
-    public Text text3;
+    [SerializeField] private Text text1;
+    [SerializeField] private Text text2;
+    [SerializeField] private Text text3;
 
     //for creating logs
     /// <summary>path to the currently used log file</summary>
@@ -33,8 +33,8 @@ public class Logger : MonoBehaviour {
     private bool logAllowed = false;
 
     //to enable/disable player hands
-    public ControllerScript leftHand;
-    public ControllerScript rightHand;
+    [SerializeField] private ControllerScript leftHand;
+    [SerializeField] private ControllerScript rightHand;
 
 
     void Start()

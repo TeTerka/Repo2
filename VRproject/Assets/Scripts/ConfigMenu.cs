@@ -36,7 +36,7 @@ public class ConfigMenu : MonoBehaviour {
     {
         foreach(AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
         {
-            if(puzzleType.typeName==type)
+            if(puzzleType.TypeName==type)
                 currentPuzzleType = puzzleType;
         }
         headline.text = "Create new " + type + " configuration";
@@ -96,7 +96,7 @@ public class ConfigMenu : MonoBehaviour {
     }
 
     /// <summary>
-    /// //cancel possible error highlight of <paramref name="i"/>
+    /// cancel possible error highlight of <paramref name="i"/>
     /// </summary>
     /// <param name="i"></param>
     public void OnInputTextEdited(InputField i)
@@ -111,7 +111,7 @@ public class ConfigMenu : MonoBehaviour {
     {
         //create only if everything is correctly filled out
         bool ok = true;
-        if (configNameField.text == null || MenuLogic.instance.ContainsWhitespaceOnly(configNameField.text)||!IsValid(configNameField.text))//valid name
+        if (configNameField.text == null || (!MenuLogic.instance.IsValidName(configNameField.text)))//valid name
         {
             ok = false;
             configNameField.image.color = Color.red;
@@ -121,7 +121,7 @@ public class ConfigMenu : MonoBehaviour {
             configNameField.image.color = Color.white;
         }
         int time=42;
-        if (timeLimitField.text == null || !int.TryParse(timeLimitField.text,out time))//valid time limit
+        if (timeLimitField.text == null || !int.TryParse(timeLimitField.text,out time) || time<=0)//valid time limit
         {
             ok = false;
             timeLimitField.image.color = Color.red;
@@ -133,10 +133,11 @@ public class ConfigMenu : MonoBehaviour {
         for (int i = 0; i <= numberOfPuzlesDropwdown.value; i++)
         {
             GameObject q = puzzlePanels[i];
-            string puzName = currentPuzzleType.GetPuzzleName(q);
-            if (puzName == null || MenuLogic.instance.ContainsWhitespaceOnly(puzName))//valid puzzle name
+            InputField puzName = currentPuzzleType.GetPuzzleName(q);
+            if (puzName == null || puzName.text==null || (!MenuLogic.instance.IsValidName(puzName.text)))//valid puzzle name
             {
                 ok = false;
+                puzName.image.color = Color.red;
             }
             if(!currentPuzzleType.CheckFillingCorrect(q, i))//custom validity check
             {
@@ -157,7 +158,7 @@ public class ConfigMenu : MonoBehaviour {
         //create configuration
         Configuration c = new Configuration();
 
-        c.puzzleType = currentPuzzleType.typeName;
+        c.puzzleType = currentPuzzleType.TypeName;
         c.name = configNameField.text;
         c.withNPC = npcToggle.isOn;
         c.withTutorial = tutorialToggle.isOn;
@@ -167,7 +168,7 @@ public class ConfigMenu : MonoBehaviour {
             PuzzleData p = new PuzzleData();
             GameObject q = puzzlePanels[i];
             p = currentPuzzleType.CreatePuzzle(q, i);
-            p.name = currentPuzzleType.GetPuzzleName(q);
+            p.name = currentPuzzleType.GetPuzzleName(q).text;
 
             c.puzzles.Add(p);
         }
@@ -195,23 +196,6 @@ public class ConfigMenu : MonoBehaviour {
         MenuLogic.instance.confMenuCanvas.SetActive(false);
 
         CleanUp();
-    }
-
-    /// <summary>
-    /// helper function that checks if <paramref name="s"/> is valid for .csv file (does not contain commas)
-    /// </summary>
-    /// <param name="s">checked string</param>
-    /// <returns>true = <paramref name="s"/> is valid for .csv file</returns>
-    private bool IsValid(string s)
-    {
-        foreach (char c in s)
-        {
-            if (c == ',')
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     /// <summary>

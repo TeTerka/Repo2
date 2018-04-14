@@ -7,12 +7,12 @@ using UnityEngine.UI;
 public class MainMenu : MonoBehaviour {
 
     [Header("references to other menu pages")]
-    public ChooseMenu cm;
-    public ExpMenu em;
+    [SerializeField] private ChooseMenu cm;
+    [SerializeField] private ExpMenu em;
 
     [Header("for generating various types of puzzles")]
-    public Button buttonPrefab;
-    public GameObject buttonPanel;
+    [SerializeField] private Button buttonPrefab;
+    [SerializeField] private GameObject buttonPanel;
 
     /// <summary>
     /// switch to the "choose experiment" menu page
@@ -43,8 +43,8 @@ public class MainMenu : MonoBehaviour {
         {
             AbstractPuzzle p = puzzleType;
             Button b = Instantiate(buttonPrefab,buttonPanel.transform);
-            b.GetComponentInChildren<Text>().text = p.typeName;
-            b.onClick.AddListener(delegate { OnCreateExpClick(p.typeName); });
+            b.GetComponentInChildren<Text>().text = p.TypeName;
+            b.onClick.AddListener(delegate { OnCreateExpClick(p.TypeName); });
         }
     }
 }

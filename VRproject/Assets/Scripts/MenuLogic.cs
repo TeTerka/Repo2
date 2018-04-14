@@ -2,7 +2,7 @@
 using UnityEngine;
 using System.Xml.Serialization;
 using System.IO;
-
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// holds data and functions neccessary for multiple menu pages
@@ -19,8 +19,6 @@ public class MenuLogic: MonoBehaviour {
     //available things
     public ListOfConfigurations availableConfigs = new ListOfConfigurations();
     public ListOfExperiments availableExperiments = new ListOfExperiments();
-
-    public Sprite missingImage;
 
     public static MenuLogic instance;
 
@@ -72,20 +70,22 @@ public class MenuLogic: MonoBehaviour {
     }
 
     /// <summary>
-    /// checks if <paramref name="s"/> contains whitespace characters only
+    /// Checks if <paramref name="s"/> is max 100 chracters long and if it contains only english letters, numbers, hyphens and underscore characters
     /// </summary>
-    /// <param name="s">checked string</param>
-    /// <returns>true = contains only whitespace characters</returns>
-    public bool ContainsWhitespaceOnly(string s)
+    /// <remarks>also does not allow names forbidden as filenames in Windows: CON, PRN, AUX, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9</remarks>
+    /// <param name="s"></param>
+    /// <returns></returns>
+    public bool IsValidName(string s)
     {
-        foreach (char c in s)
-        {
-            if (!char.IsWhiteSpace(c))
-            {
-                return false;
-            }
-        }
-        return true;
+        if (s.Length >= 100)
+            return false;
+
+        if (s == "CON" || s == "PRN" || s == "AUX" || s == "NUL" ||
+            s == "COM1" || s == "COM2" || s == "COM3" || s == "COM4" || s == "COM5" || s == "COM6" || s == "COM7" || s == "COM8" || s == "COM9" ||
+            s == "LPT1" || s == "LPT2" || s == "LPT3" || s == "LPT4" || s == "LPT5" || s == "LPT6" || s == "LPT7" || s == "LPT8" || s == "LPT9")
+            return false;
+
+        return Regex.IsMatch(s,@"^[a-zA-Z0-9_\-]+$");
     }
 
 
@@ -98,7 +98,6 @@ public class MenuLogic: MonoBehaviour {
     /// <returns>loaded sprite</returns>
     public Sprite LoadNewSprite(string FilePath, float PixelsPerUnit = 100.0f)
     {
-
         // Load a PNG or JPG image from disk to a Texture2D, assign this texture to a new sprite and return its reference
 
         Sprite NewSprite = new Sprite();

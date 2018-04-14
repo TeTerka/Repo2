@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,29 +17,40 @@ public class CubePuzzle : AbstractPuzzle
     private List<Texture2D> modelPictures = new List<Texture2D>();
 
     [Header("containers")]
-    public GameObject containerPrefab;
+    [SerializeField] private GameObject containerPrefab;
+    /// <summary>location of the grid</summary>
     public GameObject containersHolder;
-    public GameObject center;//center of the table
+    [SerializeField] private GameObject center;//center of the table
+    /// <summary>list of all containers in the grid</summary>
     public List<TileContainer> ContainerList { get; private set; }
 
     [Header("tiles")]
-    public GameObject tilePrafab;
-    public List<Transform> spawnPoints = new List<Transform>();//list of manually created spawn points
-    public GameObject tileHolder;
+    [SerializeField] private GameObject tilePrafab;
+    [SerializeField] private List<Transform> spawnPoints = new List<Transform>();//list of manually created spawn points
+    [SerializeField] private GameObject tileHolder;
+    /// <summary>size of one tile (one cube)</summary>
     public float TileSize { get; private set; }
+    /// <summary>list of all tiles (cubes)</summary>
     public List<GameObject> TileList { get; private set; }
-
+    /// <summary>says on which side of the cube is the part of the image</summary>
+    /// <remarks>based on the texture layout (usually 0 has image, 1-5 are blank):
+    /// <table>
+    /// <tr><td>x<td>x<td>x
+    /// <tr><td>3<td>4<td>5<
+    /// <tr><td>0<td>1<td>2<
+    /// </table>
+    /// </remarks>
     public int ModelPictureNumber { get; private set; }
 
     [Header("start&tut phase stuff")]
-    public Texture welcomePicture;
-    public Texture2D startCubeTexture;
-    public Texture tutorialPicture;
-    public Texture2D tutInputPicture;
+    [SerializeField] private Texture welcomePicture;
+    [SerializeField] private Texture2D startCubeTexture;
+    [SerializeField] private Texture tutorialPicture;
+    [SerializeField] private Texture2D tutInputPicture;
 
     [Header("for generating spawnpoints")]
-    public Transform leftPoint;
-    public Transform rightPoint;
+    [SerializeField] private Transform leftPoint;
+    [SerializeField] private Transform rightPoint;
     private List<Vector3> spawnPositions = new List<Vector3>();//list of all spawnpoints (created in GenerateSpawnPoints) 
 
     [Header("FileBrowser")]
@@ -51,11 +63,18 @@ public class CubePuzzle : AbstractPuzzle
     [Header("stuff needed for menu")]
     private GameObject activePanel;
     private int activePanelNumber;
-    public GameObject configMenuBlockingPanel;
+    [SerializeField] private GameObject configMenuBlockingPanel;
     private List<string> texturePaths = new List<string>();
-    public GameObject table;
+    [SerializeField] private GameObject table;
     private List<string> widths = new List<string>();
     private List<string> heigths = new List<string>();
+
+    [SerializeField] private Sprite missingImage;
+
+    //for cube puzzle log
+    private PuzzleTile leftHeld = null;
+    private PuzzleTile rightHeld = null;
+    [SerializeField] private Transform replayCubePoint;
 
     //containers numbered from down left corner, see example (for size 3x5):
     // ---------------------
@@ -84,8 +103,18 @@ public class CubePuzzle : AbstractPuzzle
         ContainerList = new List<TileContainer>();
         TileList = new List<GameObject>();
         TileSize = 0.15f;
-        if (typeName == "")
-            typeName = "CubePuzzle";
+        TypeName = "CubePuzzle";
+
+        //create folder for images
+        try
+        {
+            if (!Directory.Exists(Application.dataPath + "\\ImageCopies"))
+            {
+                Directory.CreateDirectory(Application.dataPath + "\\ImageCopies");
+            }
+        }
+        catch
+        { ErrorCatcher.instance.Show("Problem with "+ Application.dataPath + "\\ImageCopies"); }
     }
 
     private void Start()
@@ -152,18 +181,33 @@ public class CubePuzzle : AbstractPuzzle
             return true;
         }
     }
-    public override bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
+    public override string FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
     {
         panel.GetComponentInChildren<Text>().text = puzzle.widthpx + " x " + puzzle.heigthpx;
         List<Image> images = new List<Image>();
         panel.GetComponentsInChildren<Image>(images);
-        images[1].sprite = MenuLogic.instance.LoadNewSprite(puzzle.pathToImage);
+        images[1].sprite = MenuLogic.instance.LoadNewSprite(Application.dataPath + "\\ImageCopies" + puzzle.pathToImage);
         if (images[1].sprite == null)//aka if picture loadig failed
         {
-            images[1].sprite = MenuLogic.instance.missingImage;
-            return false;
+            images[1].sprite = missingImage;
+            return "missing file "+ Application.dataPath + "\\ImageCopies" + puzzle.pathToImage;
         }
-        return true;
+        return null;
+    }
+
+    public override string CheckForMissingThings(Configuration c)
+    {
+        string missingStuff = "";
+        foreach (PuzzleData item in c.puzzles)
+        {
+            if (!File.Exists(Application.dataPath + "\\ImageCopies" + item.pathToImage))
+            {
+                missingStuff += "missing file " + Application.dataPath + "\\ImageCopies" + item.pathToImage +"\n";
+            }
+        }
+        if (missingStuff == "")
+            return null;
+        return missingStuff;
     }
 
     public override void PrepareInteractibleInfoPanel(GameObject panel, int i)
@@ -178,10 +222,10 @@ public class CubePuzzle : AbstractPuzzle
         panel.GetComponentInChildren<InputField>().onValueChanged.AddListener(delegate { panel.GetComponentInChildren<InputField>().image.color = Color.white; });
         texturePaths.Add(null);
     }
-    public override string GetPuzzleName(GameObject panel)
+    public override InputField GetPuzzleName(GameObject panel)
     {
         InputField puzzleNameField = panel.GetComponentInChildren<InputField>();
-        return puzzleNameField.text;
+        return puzzleNameField;
     }
 
     /// <summary>
@@ -216,19 +260,39 @@ public class CubePuzzle : AbstractPuzzle
         m_fileBrowser.FileImage = m_fileImage;
     }
     /// <summary>
-    /// shows the selected image in puzzle panel and stores the path to the image
+    /// copies the selected image to ImageCopies folder, shows the selected image in puzzle panel and stores the path to the image
     /// </summary>
     /// <param name="path">path to the selected image chosen in file browser</param>
     protected void FileSelectedCallback(string path)
     {
         m_fileBrowser = null;
-        texturePaths[activePanelNumber] = path;
+
         if (path != null)
         {
-            activePanel.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(path);
+            //copy selected image to ImageCopies folder
+            string fileName = path.Substring(path.LastIndexOf('\\'), path.LastIndexOf('.') - path.LastIndexOf('\\'));
+            string fileType = path.Substring(path.LastIndexOf('.'));
+            int i = 0;
+            while (File.Exists(Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType))
+            {
+                i++;
+            }
+            try
+            {
+                File.Copy(path, Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType);
+            }
+            catch
+            {
+                ErrorCatcher.instance.Show("Problem with file " + path + " or folder " + Application.dataPath + "\\ImageCopies");
+            }
+            //save path to the image
+            texturePaths[activePanelNumber] = fileName + "(" + i + ")" + fileType;
+
+            //show image in the panel
+            activePanel.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType);
             if (activePanel.GetComponentInChildren<Button>().image.sprite == null)//if picture loadig failed
             {   
-                activePanel.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.missingImage;
+                activePanel.GetComponentInChildren<Button>().image.sprite = missingImage;
             }
         }
         else
@@ -320,10 +384,10 @@ public class CubePuzzle : AbstractPuzzle
         {
             PuzzleData puzzle = c.puzzles[i];
             Texture2D tt;//texture of the whole model picture
-            if ((tt = MenuLogic.instance.LoadTexture(puzzle.pathToImage)) == null)//if loading failed load "missing file" picture
+            if ((tt = MenuLogic.instance.LoadTexture(Application.dataPath + "\\ImageCopies" + puzzle.pathToImage)) == null)//if loading failed load "missing file" picture
             {
-                texturesForCubes.Add(CreateTexturesForCubes(puzzle.heigthpx, puzzle.widthpx, MenuLogic.instance.missingImage.texture));
-                tt = MenuLogic.instance.missingImage.texture;
+                texturesForCubes.Add(CreateTexturesForCubes(puzzle.heigthpx, puzzle.widthpx, missingImage.texture));
+                tt = missingImage.texture;
             }
             else//load correct picture
             {
@@ -345,8 +409,8 @@ public class CubePuzzle : AbstractPuzzle
         PuzzleData puzzle = NewManager.instance.ActiveConfig.puzzles[puzzleIndex];
 
         //scaling of the model picture
-        float x = puzzle.widthpx * TileSize * 3f;//=>model picture 3x bigger than the grid
-        float y = puzzle.heigthpx * TileSize * 3f;
+        float x = puzzle.widthpx * TileSize * 2.5f;//=>model picture 2.5x bigger than the grid
+        float y = puzzle.heigthpx * TileSize * 2.5f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         //set model picture
@@ -359,8 +423,8 @@ public class CubePuzzle : AbstractPuzzle
     public override void StartStart()
     {
         //set model picture
-        float x = 5 * TileSize * 3f;
-        float y = 3 * TileSize * 3f;
+        float x = 5 * TileSize * 2.5f;
+        float y = 3 * TileSize * 2.5f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         NewManager.instance.SetWallPicture(welcomePicture);
@@ -377,8 +441,8 @@ public class CubePuzzle : AbstractPuzzle
     public override void StartTut()
     {
         //set model picture
-        float x = 5 * TileSize * 3f;
-        float y = 3 * TileSize * 3f;
+        float x = 5 * TileSize * 2.5f;
+        float y = 3 * TileSize * 2.5f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         NewManager.instance.SetWallPicture(tutorialPicture);
@@ -539,14 +603,12 @@ public class CubePuzzle : AbstractPuzzle
         {
             for (int j = 0; j < w; j++)
             {
-                //get random rotation - not used in the end, we want all cubes face up
-                Vector3[] axies = new Vector3[] { Vector3.forward, Vector3.down, Vector3.right, Vector3.back, Vector3.up, Vector3.left };
-                //int randomIndex1 = Random.Range(0, 6);
-                //int randomIndex2 = Random.Range(0, 6);
-                //Quaternion randomRotation = Quaternion.LookRotation(axies[randomIndex1], axies[randomIndex2]);
+                //get random rotation (but keep all cubes face up)
+                Vector3[] axies = new Vector3[] { Vector3.forward, Vector3.right, Vector3.back, Vector3.left };
+                int randomIndex = Random.Range(0, 4);
 
                 //create the cube
-                GameObject t = Instantiate(tilePrafab, spawnPositions[k], Quaternion.LookRotation(axies[3], axies[1]));
+                GameObject t = Instantiate(tilePrafab, spawnPositions[k], Quaternion.LookRotation(axies[randomIndex], Vector3.down));
                 t.transform.SetParent(tileHolder.transform);
                 t.transform.localScale = new Vector3(TileSize * 100, TileSize * 100, TileSize * 100);// *100 beacase my model of cube is 100x smaller than unity cube
 
@@ -641,12 +703,6 @@ public class CubePuzzle : AbstractPuzzle
     //------------------------------------------------------------------------------------------------
     // methods for logging and replaying the logfile
     //------------------------------------------------------------------------------------------------
-
-
-    //for cube puzzle log
-    private PuzzleTile leftHeld = null;
-    private PuzzleTile rightHeld = null;
-    public Transform replayCubePoint;
 
     public override void Simulate(string[] atoms)
     {

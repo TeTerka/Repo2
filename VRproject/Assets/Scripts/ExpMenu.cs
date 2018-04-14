@@ -10,23 +10,23 @@ using System.IO;
 public class ExpMenu : MonoBehaviour {
 
     [Header("UI reference")]
-    public InputField expName;
-    public GameObject errorText;
-    public GameObject chosenConfigScrollViewContent;
-    public GameObject availableConfigScrollViewContent;
+    [SerializeField] private InputField expName;
+    [SerializeField] private GameObject errorText;
+    [SerializeField] private GameObject chosenConfigScrollViewContent;
+    [SerializeField] private GameObject availableConfigScrollViewContent;
     private GameObject InnerScrollViewContent;
-    public ConfigMenu cm;
+    [SerializeField] private ConfigMenu cm;
 
     [Header("PopupPanel")]
-    public GameObject popupPanel;
-    public Button yesButton;
-    public Text popupConfNameText;
+    [SerializeField] private GameObject popupPanel;
+    [SerializeField] private Button yesButton;
+    [SerializeField] private Text popupConfNameText;
 
     [Header("prefabs")]
-    public Button availableConfigInfoButtonPrefab;
+    [SerializeField] private Button availableConfigInfoButtonPrefab;
 
     [Header("to distinguish various puzzle types")]
-    public Text headline;
+    [SerializeField] private Text headline;
     private AbstractPuzzle currentPuzzleType;
 
 
@@ -77,7 +77,7 @@ public class ExpMenu : MonoBehaviour {
     /// <param name="c">added configuration</param>
     public void OnAvailableConfigClick(Button availableButton,Configuration c)
     {
-        if (c.puzzleType != this.currentPuzzleType.typeName)//make sure the experiment consists of configurations of the right type
+        if (c.puzzleType != this.currentPuzzleType.TypeName)//make sure the experiment consists of configurations of the right type
             return;
 
         foreach (var item in chosenConfigs)//make sure the experiment cosists of uniquely named configurations
@@ -156,7 +156,7 @@ public class ExpMenu : MonoBehaviour {
     {
         MenuLogic.instance.confMenuCanvas.SetActive(true);
         MenuLogic.instance.expMenuCanvas.SetActive(false);
-        cm.SetPuzzleType(currentPuzzleType.typeName);
+        cm.SetPuzzleType(currentPuzzleType.TypeName);
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public class ExpMenu : MonoBehaviour {
     {
         //create only if everything is correctly filled out (corretly = has a name and consists of at leat one configuration)
         bool ok = true;
-        if (expName.text == null || MenuLogic.instance.ContainsWhitespaceOnly(expName.text))//correct name
+        if (expName.text == null || (!MenuLogic.instance.IsValidName(expName.text)))//correct name
         {
             ok = false;
             expName.image.color = Color.red;
@@ -206,7 +206,7 @@ public class ExpMenu : MonoBehaviour {
         //create experiment (class)
         Experiment e = new Experiment();
         e.name = expName.text;
-        e.puzzleType = currentPuzzleType.typeName;
+        e.puzzleType = currentPuzzleType.TypeName;
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
@@ -223,9 +223,9 @@ public class ExpMenu : MonoBehaviour {
             //create file for results
             var f = File.Create(Application.dataPath + "/" + e.name + j + "/results.csv");
             f.Close();
-            e.resultsFile = Application.dataPath + "/" + e.name + j + "/results.csv";
+            e.resultsFile = "/" + e.name + j + "/results.csv";
             //add a header to the file
-            using (StreamWriter sw = new StreamWriter(e.resultsFile, true))
+            using (StreamWriter sw = new StreamWriter(Application.dataPath + e.resultsFile, true))
             {
                 sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
                 sw.Close();
@@ -266,7 +266,7 @@ public class ExpMenu : MonoBehaviour {
     {
         foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
         {
-            if (puzzleType.typeName == type)
+            if (puzzleType.TypeName == type)
                 currentPuzzleType = puzzleType;
         }
         headline.text = "Create new "+type+" experiment";

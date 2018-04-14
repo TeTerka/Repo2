@@ -10,8 +10,8 @@ public class ErrorCatcher : MonoBehaviour {
 
     public static ErrorCatcher instance;
 
-    public GameObject errorCanvas;
-    public Text errorDescription;
+    [SerializeField] private GameObject errorCanvas;
+    [SerializeField] private Text errorDescription;
 
     /// <summary>states whether any error was catched</summary>
     public bool CatchedError { get; private set; }
@@ -33,7 +33,8 @@ public class ErrorCatcher : MonoBehaviour {
         errorCanvas.SetActive(true);
         errorDescription.text = errorText;
 
-        Logger.instance.StopLogger();
+        if(Logger.instance!=null)
+            Logger.instance.StopLogger();
         Time.timeScale = 0;
     }
 

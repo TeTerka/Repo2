@@ -11,51 +11,50 @@ using UnityEngine.UI;
 public class PipePuzzle : AbstractPuzzle
 {
     [Header("generating pipes")]
-    public GameObject cross4Prefab;
-    public GameObject cross3Prefab;
-    public GameObject curvePrefab;
-    public GameObject linePrefab;
-    public GameObject startTubePrefab;
-    public GameObject endTubePrefab;
-    public GameObject waterTapPrefab;
-    public GameObject pipesHolder;
-    public GameObject center;//center of the table
-    public float PipeSize { get; private set; }//++++++++++++why not private?
+    [SerializeField] private GameObject cross4Prefab;
+    [SerializeField] private GameObject cross3Prefab;
+    [SerializeField] private GameObject curvePrefab;
+    [SerializeField] private GameObject linePrefab;
+    [SerializeField] private GameObject startTubePrefab;
+    [SerializeField] private GameObject endTubePrefab;
+    [SerializeField] private GameObject waterTapPrefab;
+    [SerializeField] private GameObject pipesHolder;
+    [SerializeField] private GameObject center;//center of the table
+    private float pipeSize;
 
-    public Transform startSpot;//place for the pipe in start phase
+    [SerializeField] private Transform startSpot;//place for the pipe in start phase
     private List<GameObject> helpPipes = new List<GameObject>();//start and end pipes (the ones that do not rotate)
 
-    public List<List<PipeTile>> PipeList { get; private set; }//++++++++++++why not private?
+    private List<List<PipeTile>> pipeList;
     private bool pathFound = false;
 
     [Header("button on the table")]
-    public GameObject buttonPrefab;
-    public Transform buttonSpot;
-    public GameObject Button { get; private set; }//++++++++++++why not private?
+    [SerializeField] private GameObject buttonPrefab;
+    [SerializeField] private Transform buttonSpot;
+    private GameObject button;
 
     [Header("model pictures")]
-    public Texture2D startPicture;
-    public Texture2D tutPicture;
-    public Texture2D phasePicture;
+    [SerializeField] private Texture2D startPicture;
+    [SerializeField] private Texture2D tutPicture;
+    [SerializeField] private Texture2D phasePicture;
 
     [Header("stuff for menu settings")]
-    public GameObject table;//to be able to get table size
-    public Sprite pipeImage;
+    [SerializeField] private GameObject table;//to be able to get table size
+    [SerializeField] private Sprite pipeImage;
     private List<string> widths = new List<string>();
     private List<string> heigths = new List<string>();
 
     private void Start()
     {
-        PipeSize = 0.2f;
-        PipeList = new List<List<PipeTile>>();
-        if (typeName == "")
-            typeName = "PipePuzzle";
+        pipeSize = 0.2f;
+        pipeList = new List<List<PipeTile>>();
+        TypeName = "PipePuzzle";
 
         //find out how many pipes can fit on the table
         float tableWidth = table.transform.lossyScale.x;
         float tableHeigth = table.transform.lossyScale.z;
-        int maxWidth = (int)((tableWidth / 2) / PipeSize);//+++++++++++++++++++++?
-        int maxHeigth = (int)(tableHeigth / PipeSize) + 1;//+++++++++++++++++++++?
+        int maxWidth = (int)((tableWidth / 1.5f) / pipeSize);
+        int maxHeigth = (int)(tableHeigth / pipeSize)+1;
 
         //set the content of dropdowns in interactibleInfoPanelPrefab accordingly 
         SetNumberOfPuzzlesDropdownContent(maxWidth, maxHeigth);
@@ -83,13 +82,18 @@ public class PipePuzzle : AbstractPuzzle
         }
     }
 
-    public override bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
+    public override string FillTheInfoPanel(GameObject panel, PuzzleData puzzle)
     {
         panel.GetComponentInChildren<Text>().text = puzzle.widthpx + " x " + puzzle.heigthpx;
         List<Image> images = new List<Image>();
         panel.GetComponentsInChildren<Image>(images);
         images[1].sprite = pipeImage;
-        return true;
+        return null;
+    }
+
+    public override string CheckForMissingThings(Configuration c)
+    {
+        return null;
     }
 
     public override void PrepareInteractibleInfoPanel(GameObject panel, int i)
@@ -122,10 +126,10 @@ public class PipePuzzle : AbstractPuzzle
         return p;
     }
 
-    public override string GetPuzzleName(GameObject panel)
+    public override InputField GetPuzzleName(GameObject panel)
     {
         InputField puzzleNameField = panel.GetComponentInChildren<InputField>();
-        return puzzleNameField.text;
+        return puzzleNameField;
     }
 
 
@@ -325,14 +329,14 @@ public class PipePuzzle : AbstractPuzzle
     private void BasicFinish()
     {
         //destroy pipes
-        foreach(List<PipeTile> row in PipeList)
+        foreach(List<PipeTile> row in pipeList)
         {
             foreach (PipeTile pipe in row)
             {
                 Destroy(pipe.gameObject);
             }
         }
-        PipeList.Clear();
+        pipeList.Clear();
 
         //destroy "help" pipes (=start tube, end tube atd.)
         foreach (GameObject p in helpPipes)
@@ -345,15 +349,15 @@ public class PipePuzzle : AbstractPuzzle
     public override void FinishConfig()
     {
         //destroy the button
-        if(Button!=null)
-            Destroy(Button);
-        Button = null;
+        if(button!=null)
+            Destroy(button);
+        button = null;
     }
     
     public override void StartConfig(Configuration c)
     {
         //instantiate the button
-        Button = Instantiate(buttonPrefab, buttonSpot);
+        button = Instantiate(buttonPrefab, buttonSpot);
     }
 
     public override void StartPhase()
@@ -363,8 +367,8 @@ public class PipePuzzle : AbstractPuzzle
         GeneratePipes(nm.ActiveConfig.puzzles[nm.ActivePuzzleIndex].heigthpx, nm.ActiveConfig.puzzles[nm.ActivePuzzleIndex].widthpx);
 
         //set up the wall picture
-        float x = 5 * PipeSize * 2f;
-        float y = 3 * PipeSize * 2f;
+        float x = 5 * pipeSize * 2f;
+        float y = 3 * pipeSize * 2f;
         nm.MultiplyWallpictureScale(x, y);
         nm.SetWallPicture(phasePicture);
     }
@@ -374,13 +378,13 @@ public class PipePuzzle : AbstractPuzzle
         //create the start tube
         GameObject cc = Instantiate(startTubePrefab);
         cc.transform.SetParent(startSpot);
-        cc.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
+        cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
         cc.transform.localPosition = new Vector3(0, 0, 0 );
         helpPipes.Add(cc);
 
         //set up the wall picture
-        float x = 5 * PipeSize * 2f;
-        float y = 3 * PipeSize * 2f;
+        float x = 5 * pipeSize * 2f;
+        float y = 3 * pipeSize * 2f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
         NewManager.instance.SetWallPicture(startPicture);
     }
@@ -391,8 +395,8 @@ public class PipePuzzle : AbstractPuzzle
         GeneratePipes(2, 2);
 
         //set up the wall picture
-        float x = 5 * PipeSize * 2f;
-        float y = 3 * PipeSize * 2f;
+        float x = 5 * pipeSize * 2f;
+        float y = 3 * pipeSize * 2f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
         NewManager.instance.SetWallPicture(tutPicture);
     }
@@ -428,10 +432,10 @@ public class PipePuzzle : AbstractPuzzle
     {
         //setup
         List<List<bool>> seen = new List<List<bool>>();
-        for (int i = 0; i < PipeList.Count; i++)
+        for (int i = 0; i < pipeList.Count; i++)
         {
             seen.Add(new List<bool>());
-            for (int j = 0; j< PipeList[i].Count;j++)
+            for (int j = 0; j< pipeList[i].Count;j++)
             {
                 seen[i].Add(false);
             }
@@ -439,19 +443,19 @@ public class PipePuzzle : AbstractPuzzle
         bool ret = true;
 
         //special tiles
-        if (PipeList[h - 1][w - 1].right == false)//if the first pipe does not fit the start pipe there is no need to continue checking
+        if (pipeList[h - 1][w - 1].right == false)//if the first pipe does not fit the start pipe there is no need to continue checking
         {
             helpPipes[helpPipes.Count - 1].gameObject.GetComponentInChildren<ParticleSystem>().Play();
             return false;
         }
-        if(PipeList[0][0].left == false)//check if final pipe fits the end pipe
+        if(pipeList[0][0].left == false)//check if final pipe fits the end pipe
         {
             ret = false;
         }
 
         //flooding algorithm
         Queue<PipeTile> qu = new Queue<PipeTile>();
-        qu.Enqueue(PipeList[h - 1][w - 1]);
+        qu.Enqueue(pipeList[h - 1][w - 1]);
         seen[h - 1][w - 1] = true;
         while (qu.Count != 0)
         {
@@ -460,12 +464,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.I + 1 < h)//and is not in the topmost position
                 {
-                    if (PipeList[p.I + 1][p.J].down)//if the pipe above it has a down end
+                    if (pipeList[p.I + 1][p.J].down)//if the pipe above it has a down end
                     {
                         if (seen[p.I + 1][p.J] == false)//... and we have not seen it yet
                         {
                             seen[p.I + 1][p.J] = true;//visit it
-                            qu.Enqueue(PipeList[p.I + 1][p.J]);//and remember to check its neighbours too
+                            qu.Enqueue(pipeList[p.I + 1][p.J]);//and remember to check its neighbours too
                         }
                     }
                     else
@@ -488,12 +492,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.J + 1 < w)
                 {
-                    if (PipeList[p.I][p.J + 1].left)//the same for right neighbour
+                    if (pipeList[p.I][p.J + 1].left)//the same for right neighbour
                     {
                         if (seen[p.I][p.J + 1] == false)
                         {
                             seen[p.I][p.J + 1] = true;
-                            qu.Enqueue(PipeList[p.I][p.J + 1]);
+                            qu.Enqueue(pipeList[p.I][p.J + 1]);
                         }
                     }
                     else
@@ -516,12 +520,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.I - 1 >= 0)
                 {
-                    if (PipeList[p.I - 1][p.J].up)//the same for down neighbour
+                    if (pipeList[p.I - 1][p.J].up)//the same for down neighbour
                     {
                         if (seen[p.I - 1][p.J] == false)
                         {
                             seen[p.I - 1][p.J] = true;
-                            qu.Enqueue(PipeList[p.I - 1][p.J]);
+                            qu.Enqueue(pipeList[p.I - 1][p.J]);
                         }
                     }
                     else
@@ -544,12 +548,12 @@ public class PipePuzzle : AbstractPuzzle
             {
                 if (p.J - 1 >= 0)
                 {
-                    if (PipeList[p.I][p.J - 1].right)//the same for left neighbour
+                    if (pipeList[p.I][p.J - 1].right)//the same for left neighbour
                     {
                         if (seen[p.I][p.J - 1] == false)
                         {
                             seen[p.I][p.J - 1] = true;
-                            qu.Enqueue(PipeList[p.I][p.J - 1]);
+                            qu.Enqueue(pipeList[p.I][p.J - 1]);
                         }
                     }
                     else
@@ -579,28 +583,31 @@ public class PipePuzzle : AbstractPuzzle
     /// <param name="h">heigth</param>
     /// <param name="w">width</param>
     private void GeneratePipes(int h, int w)
-    {    
-        //place the containersHolder on the table +++++++++++++++++++++
-        pipesHolder.transform.position = new Vector3(center.transform.position.x - ((w * (PipeSize - 0.05f)) / 2) + ((PipeSize - 0.05f) / 2), center.transform.position.y+0.05f, center.transform.position.z - ((h * (PipeSize - 0.05f)) / 2) + ((PipeSize - 0.05f) / 2));
+    {
+        float o = 0.05f;//offset
+
+        //place the pipersHolder on the table
+        Vector3 ctp = center.transform.position;
+        pipesHolder.transform.position = new Vector3(ctp.x - ((w * (pipeSize - o)) / 2) + ((pipeSize - o) / 2), ctp.y+o, ctp.z - ((h * (pipeSize - o)) / 2) + ((pipeSize - o) / 2));
         
         //create end tube
         GameObject cc = Instantiate(endTubePrefab);
         cc.transform.SetParent(pipesHolder.transform);
-        cc.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
-        cc.transform.localPosition = new Vector3(2 * (PipeSize - 0.05f), -0.022f, 0 * (PipeSize - 0.05f));//fuj -0.022 napevno......++++++++++++++++++++++++++++++++++++
+        cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
+        cc.transform.localPosition = new Vector3(2 * (pipeSize - o), -0.022f, 0 * (pipeSize - o));
         helpPipes.Add(cc);
 
         //create fancy end tube (not neccessary but has a nice valve)
         cc = Instantiate(waterTapPrefab);
         cc.transform.SetParent(pipesHolder.transform);
-        cc.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
-        cc.transform.localPosition = new Vector3(1 * (PipeSize - 0.05f), 0, 0 * (PipeSize - 0.05f));
+        cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
+        cc.transform.localPosition = new Vector3(1 * (pipeSize - o), 0, 0 * (pipeSize - o));
         helpPipes.Add(cc);
 
         //create other tubes
         for (int i = 0; i < h; i++)
         {
-            PipeList.Add(new List<PipeTile>());
+            pipeList.Add(new List<PipeTile>());
             for (int j = 0; j < w; j++)
             {
                 //decide which pipe prefab to create
@@ -619,14 +626,14 @@ public class PipePuzzle : AbstractPuzzle
                 //create it
                 GameObject c = Instantiate(pipePrefab);
                 c.transform.SetParent(pipesHolder.transform);
-                c.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
-                c.transform.localPosition = new Vector3(-j * (PipeSize-0.05f), 0, -i * (PipeSize - 0.05f));//++++++++++++++
+                c.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
+                c.transform.localPosition = new Vector3(-j * (pipeSize-o), 0, -i * (pipeSize - o));
 
                 //store info abou it
                 PipeTile pt;
                 if ((pt = c.GetComponent<PipeTile>()) == null)
                     c.gameObject.AddComponent<PipeTile>();
-                PipeList[i].Add(pt);
+                pipeList[i].Add(pt);
                 pt.Initialize(i, j);
             }
         }
@@ -634,8 +641,8 @@ public class PipePuzzle : AbstractPuzzle
         //create start tube
         cc = Instantiate(startTubePrefab);
         cc.transform.SetParent(pipesHolder.transform);
-        cc.transform.localScale = new Vector3(PipeSize, PipeSize, PipeSize);
-        cc.transform.localPosition = new Vector3(-w * (PipeSize - 0.05f), -0.022f, -(h-1)* (PipeSize - 0.05f));
+        cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
+        cc.transform.localPosition = new Vector3(-w * (pipeSize - o), -0.022f, -(h-1)* (pipeSize - o));
         helpPipes.Add(cc);
     }
 
@@ -739,16 +746,16 @@ public class PipePuzzle : AbstractPuzzle
     /// <param name="j"></param>
     private void Rotace(int i, int j)
     {
-        if (i >= PipeList.Count || j >= PipeList[i].Count) 
+        if (i >= pipeList.Count || j >= pipeList[i].Count) 
             { ErrorCatcher.instance.Show("Wrong format of this logfile: " + Logger.instance.PathToLogFile + " (illegal Rotate action)"); return; }
 
-        PipeList[i][j].OnTriggerPressed(null);
+        pipeList[i][j].OnTriggerPressed(null);
     }
     /// <summary>
     /// simulate pressing of the button on the table
     /// </summary>
     private void Press()
     {
-        Button.GetComponentInChildren<ButtonScript>().ClickEffect();
+        button.GetComponentInChildren<ButtonScript>().ClickEffect();
     }
 }

@@ -10,7 +10,7 @@ public class ControllerScript : MonoBehaviour {
     /// <summary>to determin which hand is left and which is right (the Logger needs to know this)</summary>
     public bool isLeft;
     /// <summary>the sphere defining the controller interaction range(the Logger needs to know this)</summary>
-    public Transform fingerTip;
+    [SerializeField] private Transform fingerTip;
 
     //getting information from Vive controllers
     private SteamVR_TrackedObject trackedObj;

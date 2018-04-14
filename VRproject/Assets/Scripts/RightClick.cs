@@ -7,7 +7,9 @@ using UnityEngine.Events;
 /// </summary>
 public class RightClick : MonoBehaviour, IPointerClickHandler 
 {
+    /// <summary>event for left mouse button click</summary>
     public UnityEvent leftClick;
+    /// <summary>event for right mouse button click</summary>
     public UnityEvent rightClick;
 
     /// <summary>

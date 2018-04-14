@@ -46,7 +46,7 @@ public class ButtonScript : MonoBehaviour
         {
             //logging
             if(!NewManager.instance.InReplayMode)
-                Logger.instance.Log(Time.time + " Press");//"player Pressed the button"
+                Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Press");//"player Pressed the button"
 
             PipePuzzle p = (PipePuzzle)NewManager.instance.CurrentPuzzle;//the casting is ok because the button is used only in PipePuzzle
             p.Check();

@@ -16,11 +16,11 @@ public class SpeechBehaviour : StateMachineBehaviour {
     private AudioSource mouth;
 
     /// <summary>one sentence will be dispalyed for this time (in seconds)</summary>
-    public int timeForASentence;
+    [SerializeField] private int timeForASentence;
     /// <summary>list of sentences to display</summary>
-    public List<Sentence> sentences = new List<Sentence>();
+    [SerializeField] private List<Sentence> sentences = new List<Sentence>();
     /// <summary>true = play also the audio files attached to each sentence</summary>
-    public bool useSound;
+    [SerializeField] private bool useSound;
 
     private NewManager mngr;
 
@@ -29,6 +29,18 @@ public class SpeechBehaviour : StateMachineBehaviour {
         mngr = GameObject.Find("NewManager").GetComponent<NewManager>();
         subtitlesCanvas = mngr.subtitlesCanvas;
         subtitleText = subtitlesCanvas.GetComponentInChildren<Text>();
+
+        if(useSound)
+        {
+            foreach (Sentence s in sentences)
+            {
+                if (s.audio==null)
+                {
+                    ErrorCatcher.instance.Show("missing audio in the current behaviour");
+                    return;
+                }
+            }
+        }
     }
 
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -37,36 +49,42 @@ public class SpeechBehaviour : StateMachineBehaviour {
         mngr.whoWantsSubtitles = stateInfo.shortNameHash;
         subtitlesCanvas.SetActive(true);
 
-        //display first sentence
-        npcName = mngr.npcName;
-        if (sentences[0].replaceAlex)
-        {
-            subtitleText.text = sentences[0].text.Replace("Alex", npcName);
-        }
-        else
-        {
-            subtitleText.text = sentences[0].text;
-        }
-        //manage sound
-        if (useSound)
-        {
-            mouth = mngr.TheNpc.GetComponent<AudioSource>();
-            if (mouth == null)
-            {
-                useSound = false;
-                ErrorCatcher.instance.Show("error, no AudioSource found on the NPC");
-            }
-            mouth.clip = sentences[0].audio;
-            if(mouth.clip==null)
-            {
-                useSound = false;
-                ErrorCatcher.instance.Show("error, audio clip not found in sentences[0]");
-            }
-            mouth.Play();
-        }
         //start the countdown
         time = 0;
         i = 1;
+
+        //display first sentence
+        if (sentences.Count > 0)
+        {
+            npcName = mngr.NpcName;
+            if (sentences[0].replaceAlex)
+            {
+                subtitleText.text = sentences[0].text.Replace("Alex", npcName);
+            }
+            else
+            {
+                subtitleText.text = sentences[0].text;
+            }
+            //manage sound
+            if (useSound)
+            {
+                mouth = mngr.TheNpc.GetComponent<AudioSource>();
+                if (mouth == null)
+                {
+                    useSound = false;
+                    return;
+                }
+                mouth.Stop();
+
+                mouth.clip = sentences[0].audio;
+                if (mouth.clip == null)
+                {
+                    useSound = false;
+                    return;
+                }
+                mouth.Play();
+            }
+        }
     }
 
 
@@ -76,22 +94,6 @@ public class SpeechBehaviour : StateMachineBehaviour {
         time += Time.deltaTime;
         if(i<sentences.Count && time>=timeForASentence)
         {
-            if(useSound)
-            {
-                mouth = mngr.TheNpc.GetComponent<AudioSource>();
-                if (mouth == null)
-                {
-                    useSound = false;
-                    ErrorCatcher.instance.Show("error, no AudioSource found on the NPC");
-                }
-                mouth.clip = sentences[i].audio;
-                if (mouth.clip == null)
-                {
-                    useSound = false;
-                    ErrorCatcher.instance.Show("error, audio clip found in sentences["+i+"]");
-                }
-                mouth.Play();
-            }
             if (sentences[i].replaceAlex)
             {
                 subtitleText.text = sentences[i].text.Replace("Alex", npcName);
@@ -102,6 +104,25 @@ public class SpeechBehaviour : StateMachineBehaviour {
             }
             i++;
             time = 0;
+            //manage sound
+            if (useSound)
+            {
+                mouth = mngr.TheNpc.GetComponent<AudioSource>();
+                if (mouth == null)
+                {
+                    useSound = false;
+                    return;
+                }
+                mouth.Stop();
+
+                mouth.clip = sentences[i].audio;
+                if (mouth.clip == null)
+                {
+                    useSound = false;
+                    return;
+                }
+                mouth.Play();
+            }
         }
     }
 
@@ -114,6 +135,15 @@ public class SpeechBehaviour : StateMachineBehaviour {
             subtitlesCanvas.SetActive(false);
             subtitleText.text = "";
             mngr.whoWantsSubtitles = -1;
+        }
+        //stop playing the sound
+        if (useSound)
+        {
+            mouth = mngr.TheNpc.GetComponent<AudioSource>();
+            if (mouth != null)
+            {
+                mouth.Stop();
+            }
         }
     }
 

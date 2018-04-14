@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 
-
 /// <summary>
 /// the main class for managing the running experiment
 /// </summary>
@@ -18,7 +17,7 @@ public class NewManager : MonoBehaviour {
     public List<AbstractPuzzle> puzzleTypes = new List<AbstractPuzzle>();
 
 
-    //information about current state
+    //information about current state:
     private Experiment activeExperiment = null;
 
     /// <summary>which puzzle type is currently being used</summary>
@@ -49,58 +48,63 @@ public class NewManager : MonoBehaviour {
     public bool Switching { get; private set; }
 
     [Header("model picture")]
-    public Renderer modelPictureFrame;
-    public Transform imageHolder;
+    [SerializeField] private Renderer modelPictureFrame;
+    [SerializeField] private Transform imageHolder;
 
     [Header("room scale stuff")]
-    public Transform level;
-    public Transform cameraRigPoint;
-    public Transform editorFloorScale;
+    [SerializeField] private Transform level;
+    [SerializeField] private Transform cameraRigPoint;
+    [SerializeField] private Transform editorFloorScale;
     private Vector3 originalScale = new Vector3();
 
     [Header("referencies to UI")]
-    public UImanagerScript UImangr;
-    public Text timerText;
+    [SerializeField] private UImanagerScript UImangr;
+    [SerializeField] private Text timerText;
     private float timeLeft; //in seconds
     private bool countingDown = false;
-    public Text scoreText;
+    [SerializeField] private Text scoreText;
     private int skore;
 
     //next button
-    public Button nextButton;
+    [SerializeField] private Button nextButton;
     private Color highlightColor = Color.green;
     private Color normalColor = Color.white;
 
     //other UI
-    public Text idInuput;
-    public Text messageOutput;
-    public InputField playeridInputField;
-    public GameObject popupPanel;
-    public GameObject phaseLoadingPanel;
-    public GameObject testModeHighlight;
-    public Text expNameText;
-    public Button pauseButton;
+    [SerializeField] private Text idInuput;
+    [SerializeField] private Text messageOutput;
+    [SerializeField] private InputField playeridInputField;
+    [SerializeField] private GameObject popupPanel;
+    [SerializeField] private GameObject phaseLoadingPanel;
+    [SerializeField] private GameObject testModeHighlight;
+    [SerializeField] private Text expNameText;
+    [SerializeField] private Button pauseButton;
 
     //scrollview UI
-    public GameObject phaseScrollContent;
-    public GameObject configScrollContent;
-    public GameObject namePlatePrefab;
+    [SerializeField] private GameObject phaseScrollContent;
+    [SerializeField] private GameObject configScrollContent;
+    [SerializeField] private GameObject namePlatePrefab;
     private List<GameObject> phaseLabels = new List<GameObject>();
     private List<Button> configButtons = new List<Button>();
-    public Button configNameButtonPrafab;
+    [SerializeField] private Button configNameButtonPrafab;
 
     [Header("for changing agent models and behaviours")]
-    public Transform npcPoint;
+    [SerializeField] private Transform npcPoint;
+    /// <summary>lis of all available npc models</summary>
     public List<NpcModel> npcModels = new List<NpcModel>();
+    /// <summary>lis of all available npc behaviours</summary>
     public List<NpcBeahviour> npcBehaviours = new List<NpcBeahviour>();
 
     /// <summary>reference to the currently used virtual agent</summary>
     public GameObject TheNpc { get; private set; }
 
     [Header("for talking during animation")]
-    public string npcName = "";
+    /// <summary>reference to a panel for displaying subtitles</summary>
     public GameObject subtitlesCanvas;
+    /// <summary>used by SpeechBehaviour, -1 means noone needs the subtitleCanvas</summary>
     public int whoWantsSubtitles = -1;
+    /// <summary>name of currently used npc model</summary>
+    public string NpcName { get; private set; }
 
 
     //--------------------------------------------------------------------------------------------------------------------------
@@ -109,12 +113,21 @@ public class NewManager : MonoBehaviour {
 
     private void Awake()
     {
+        if (!UnityEngine.VR.VRDevice.isPresent)
+        {
+            ErrorCatcher.instance.Show("No VR device present!");
+            return;
+        }
+        
         //singleton stuff
         if (instance != null)
         {
             Debug.Log("Multiple Managers in one scene!");
         }
         instance = this;
+
+        //check correctness of possible new npcModels, npcBehaviours or puzzleTypes
+        CheckPossibleAddedComponents();
 
         //prepare room
         ScaleRoomToFitPlayArea();
@@ -147,6 +160,7 @@ public class NewManager : MonoBehaviour {
         //move camera rig to original position
         this.transform.position = cameraRigPoint.position;
         //save this scale of model picture so that puzzles can change it but they also can go back to this size
+        imageHolder.localScale = new Vector3(1 / imageHolder.lossyScale.x, 1, 1 / imageHolder.lossyScale.z);
         originalScale = imageHolder.localScale;
 
         //adjust scale to objects which should keep original size
@@ -157,6 +171,58 @@ public class NewManager : MonoBehaviour {
                 x.localScale = new Vector3(1 / x.lossyScale.x, 1, 1 / x.lossyScale.z);
             }
         }
+    }
+
+    /// <summary>
+    /// checks if there is any problematic new puzzle type or npc model or npc behaviour
+    /// (puzzle types must have unique names, npc models must have component Animator, npc behaviours must have triggers StartStart, StartTutorial and StartNewPuzzle)
+    /// </summary>
+    private void CheckPossibleAddedComponents()
+    {
+        //new puzzle types
+        List<string> puzzleTypesNames = new List<string>();
+        foreach (AbstractPuzzle type in puzzleTypes)
+        {
+            puzzleTypesNames.Add(type.TypeName);
+        }
+        if (HasDuplicates(puzzleTypesNames)) ErrorCatcher.instance.Show("Program contains two puzzle types with the same typeName!");
+
+        //new npc models
+        foreach (NpcModel model in npcModels)
+        {
+            if(model.modelObject.GetComponent<Animator>()==null) ErrorCatcher.instance.Show("One of the npc models does not have Animator component!");
+        }
+
+        //new npc behaviours
+        GameObject emptyObjectForTesting = new GameObject();
+        Animator a = emptyObjectForTesting.AddComponent<Animator>();
+        foreach (NpcBeahviour behaviour in npcBehaviours)
+        {
+            a.runtimeAnimatorController = behaviour.behaviourAnimController;
+            if (!HasTriggerParam("StartStart", a)) ErrorCatcher.instance.Show("One of the npc behaviours is missing StartStart trigger!");
+            if (!HasTriggerParam("StartTutorial", a)) ErrorCatcher.instance.Show("One of the npc behaviours is missing StartTutorial trigger!");
+            if (!HasTriggerParam("StartNewPuzzle", a)) ErrorCatcher.instance.Show("One of the npc behaviours is missing StartNewPuzzle trigger!");
+        }
+        Destroy(emptyObjectForTesting);
+    }
+    private bool HasDuplicates<T>(List<T> subjects)
+    {
+        var set = new HashSet<T>();
+        foreach (var s in subjects)
+            if (!set.Add(s))
+            {
+                return true;
+            }
+        return false;
+    }
+    private bool HasTriggerParam(string parName, Animator anim)
+    {
+        foreach (AnimatorControllerParameter p in anim.parameters)
+        {
+            if (p.name == parName && p.type==AnimatorControllerParameterType.Trigger)
+                return true;
+        }
+        return false;
     }
 
 
@@ -173,6 +239,7 @@ public class NewManager : MonoBehaviour {
     /// <param name="justReplay">true = replay mode (replaying from a logfile)</param>
     public void StartExperiment(Experiment e,bool justTesting,bool justReplay)
     {
+        messageOutput.text = "";
         InTestMode = justTesting;
         testModeHighlight.SetActive(InTestMode);
         InReplayMode = justReplay;
@@ -183,7 +250,7 @@ public class NewManager : MonoBehaviour {
         CurrentPuzzle = null;
         foreach (AbstractPuzzle puzzleType in puzzleTypes)
         {
-            if (puzzleType.typeName == e.puzzleType)
+            if (puzzleType.TypeName == e.puzzleType)
                 CurrentPuzzle = puzzleType;
         }
         if(CurrentPuzzle == null)
@@ -390,7 +457,7 @@ public class NewManager : MonoBehaviour {
         //logging - creating a new logfile
         if ((!InReplayMode) && (!InTestMode) && (idInuput.text != ""))
         {
-            string newPath = activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + ActiveConfig.name + "_" + idInuput.text + ".mylog";
+            string newPath = Application.dataPath + activeExperiment.resultsFile.Substring(0, activeExperiment.resultsFile.LastIndexOf('/') + 1) + "/" + ActiveConfig.name + "_" + idInuput.text + ".mylog";
             try
             {
                 var f = File.Create(newPath); f.Close();
@@ -398,13 +465,13 @@ public class NewManager : MonoBehaviour {
                 {
                     sw.WriteLine(ActiveConfig.name);
                     sw.WriteLine(idInuput.text);
-                    sw.WriteLine(Time.time);
+                    sw.WriteLine(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     sw.Close();
                 }
             }
             catch (System.Exception e)
             {
-                ErrorCatcher.instance.Show("Wanted to create new logfile " + activeExperiment.resultsFile + " but it threw error " + e.ToString());
+                ErrorCatcher.instance.Show("Wanted to create new logfile " + newPath + " but it threw error " + e.ToString());
             }
             Logger.instance.SetLoggerPath(newPath);
         }
@@ -527,9 +594,9 @@ public class NewManager : MonoBehaviour {
             }
             try
             {
-                if (File.Exists(activeExperiment.resultsFile))
+                if (File.Exists(Application.dataPath + activeExperiment.resultsFile))
                 {
-                    using (StreamWriter sw = new StreamWriter(activeExperiment.resultsFile, true))
+                    using (StreamWriter sw = new StreamWriter(Application.dataPath + activeExperiment.resultsFile, true))
                     {
                         sw.WriteLine(dataToSave);
                         sw.Close();
@@ -537,12 +604,12 @@ public class NewManager : MonoBehaviour {
                 }
                 else
                 {
-                    ErrorCatcher.instance.Show("Wanted to write a line to results but the file " + activeExperiment.resultsFile + " does not exist.");
+                    ErrorCatcher.instance.Show("Wanted to write a line to results but the file " + Application.dataPath + activeExperiment.resultsFile + " does not exist.");
                 }
             }
             catch(System.Exception e)
             {
-                ErrorCatcher.instance.Show("Wanted to write a line to results to file " + activeExperiment.resultsFile + " but it threw error "+e.ToString());
+                ErrorCatcher.instance.Show("Wanted to write a line to results to file " + Application.dataPath + activeExperiment.resultsFile + " but it threw error "+e.ToString());
             }
         }
 
@@ -586,7 +653,7 @@ public class NewManager : MonoBehaviour {
     {
         if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled, valid and unique
         {
-            if ((!ContainsWhitespaceOnly(idInuput.text))&& IsValidForCsv(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))
+            if (MenuLogic.instance.IsValidName(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))
             {
                 messageOutput.text = "";
                 playeridInputField.interactable = false;
@@ -621,7 +688,7 @@ public class NewManager : MonoBehaviour {
 
         //logging
         if (!InReplayMode)
-            Logger.instance.Log(Time.time + " Next");
+            Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Next");
 
         if (InStart)
         {
@@ -643,10 +710,6 @@ public class NewManager : MonoBehaviour {
             else
             {
                 ActivePuzzleIndex = -1;
-                if (ActiveConfig.puzzles.Count == 1)
-                {
-                    nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
-                }
                 PhaseStart();
             }
         }
@@ -662,10 +725,6 @@ public class NewManager : MonoBehaviour {
 
                 //start next
                 ActivePuzzleIndex = -1;
-                if (ActiveConfig.puzzles.Count==1)
-                {
-                    nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
-                }
                 PhaseStart();
             }
             else
@@ -698,10 +757,6 @@ public class NewManager : MonoBehaviour {
                     yield return new WaitForSeconds(1);
 
                     //start next
-                    if (ActivePuzzleIndex == ActiveConfig.puzzles.Count - 2)
-                    {
-                        nextButton.GetComponentInChildren<Text>().text = "SAVE RESULT";
-                    }
                     PhaseStart();
                 }
             }
@@ -709,52 +764,6 @@ public class NewManager : MonoBehaviour {
         phaseLoadingPanel.SetActive(false);//allow the experimentor to use GUI again
         Switching = false;
     }
-
-
-
-
-
-    //--------------------------------------------------------------------------------------------------------------------------
-    // HELPER FUNTIONS
-    //--------------------------------------------------------------------------------------------------------------------------
-
-
-    /// <summary>
-    /// checks if <paramref name="s"/> contains whitespace characters only
-    /// </summary>
-    /// <param name="s">checked string</param>
-    /// <returns>true = contains only whitespace characters</returns>
-    private bool ContainsWhitespaceOnly(string s)
-    {
-        foreach (char c in s)
-        {
-            if (!char.IsWhiteSpace(c))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /// <summary>
-    /// checks if <paramref name="s"/> does not contain commas and quotation marks
-    /// </summary>
-    /// <param name="s">checked strind</param>
-    /// <returns>true = does not contain forbidden chars</returns>
-    private bool IsValidForCsv(string s)
-    {
-        foreach (char c in s)
-        {
-            if (c==','||c=='"')
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-
 
 
 
@@ -900,7 +909,7 @@ public class NewManager : MonoBehaviour {
         GameObject npc = Instantiate(model.modelObject, npcPoint.position, npcPoint.rotation);
         npc.GetComponent<Animator>().runtimeAnimatorController = bahaviour.behaviourAnimController as RuntimeAnimatorController;
         TheNpc = npc;
-        npcName = model.modelName;
+        NpcName = model.modelName;
     }
 
     /// <summary>
@@ -910,7 +919,7 @@ public class NewManager : MonoBehaviour {
     {
         Destroy(TheNpc);
         TheNpc = null;
-        npcName = "";
+        NpcName = "";
     }
 
 }

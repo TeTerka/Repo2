@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Every puzzle type must inherit from this class
@@ -7,7 +8,7 @@ using UnityEngine;
 public abstract class AbstractPuzzle : MonoBehaviour {
 
     /// <summary>name of this puzzle type</summary>
-    public string typeName;
+    public string TypeName { get; protected set; }
 
     /// <summary>list of items which should preserve original size during the scaling of the room</summary>
     public List<Transform> nonScalables;
@@ -68,8 +69,15 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     /// </summary>
     /// <param name="panel">an instance of infoPanelPrefab</param>
     /// <param name="puzzle"></param>
-    /// <returns>true = <paramref name="panel"/> was filled without any errors (no missing files etc.)</returns>
-    public abstract bool FillTheInfoPanel(GameObject panel, PuzzleData puzzle);
+    /// <returns>null = <paramref name="panel"/> was filled without any errors (no missing files etc.), else returns description of error for the user</returns>
+    public abstract string FillTheInfoPanel(GameObject panel, PuzzleData puzzle);
+
+    /// <summary>
+    /// checks if any special files needed for this puzzle are missing in configuration <paramref name="c"/>
+    /// </summary>
+    /// <param name="c"></param>
+    /// <returns>null = nothing is missing, else description of missing files</returns>
+    public abstract string CheckForMissingThings(Configuration c);
 
     /// <summary>
     /// reference to customized copy of the asset "PuzzlePanel", it is for entering info about a puzzle
@@ -104,7 +112,7 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     /// </summary>
     /// <param name="panel"></param>
     /// <returns>name of puzzle described by <paramref name="panel"/> </returns>
-    public abstract string GetPuzzleName(GameObject panel);
+    public abstract InputField GetPuzzleName(GameObject panel);
 
 
 

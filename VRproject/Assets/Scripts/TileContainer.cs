@@ -38,7 +38,7 @@ public class TileContainer : MonoBehaviour
     {
         foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
         {
-            if (puzzleType.typeName == "CubePuzzle")
+            if (puzzleType.TypeName == "CubePuzzle")
                 cp = (CubePuzzle)puzzleType;
         }
         if (cp==null)

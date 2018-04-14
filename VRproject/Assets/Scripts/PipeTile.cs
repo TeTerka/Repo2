@@ -22,8 +22,9 @@ public class PipeTile : MonoBehaviour,IInteractibleObject
     public ParticleSystem particleDown;
     public ParticleSystem particleLeft;
 
-    //describes position of this pipe
+    /// <summary>describes position of this pipe</summary>
     public int I { get; private set; }
+    /// <summary>describes position of this pipe</summary>
     public int J { get;private set; }
 
     /// <summary>
@@ -43,7 +44,7 @@ public class PipeTile : MonoBehaviour,IInteractibleObject
         {
             //logging
             if (!NewManager.instance.InReplayMode)
-                Logger.instance.Log(Time.time+" Rotate "+I+" "+J);//"player Rotated the tile at [i,j] position 90 degrees clockwise"
+                Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture)+" Rotate "+I+" "+J);//"player Rotated the tile at [i,j] position 90 degrees clockwise"
 
             //rotate model
             this.gameObject.transform.Rotate(90, 0, 0);

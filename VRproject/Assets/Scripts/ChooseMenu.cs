@@ -12,21 +12,21 @@ public class ChooseMenu : MonoBehaviour {
     private Experiment chosenExperiment;
 
     [Header("UI references")]
-    public GameObject availableExpsScrollViewContent;
-    public GameObject expInfoScrollViewContent;
-    public GameObject errorText;
+    [SerializeField] private GameObject availableExpsScrollViewContent;
+    [SerializeField] private GameObject expInfoScrollViewContent;
+    [SerializeField] private GameObject errorText;
     private GameObject InnerScrollViewContent;
-    public GameObject otherErrorText;
-    public Text runButtonText;
+    [SerializeField] private GameObject otherErrorText;
+    [SerializeField] private Text runButtonText;
 
     [Header("Popup")]
-    public GameObject popupPanel;
-    public Button yesButton;
-    public Text popupExpNameText;
+    [SerializeField] private GameObject popupPanel;
+    [SerializeField] private Button yesButton;
+    [SerializeField] private Text popupExpNameText;
 
     [Header("Prefabs")]
-    public Button expNameButtonPrefab;
-    public GameObject expConfInfoPanelPrefab;
+    [SerializeField] private Button expNameButtonPrefab;
+    [SerializeField] private GameObject expConfInfoPanelPrefab;
 
     private List<Button> expButtons = new List<Button>();//buttons representing available experiments
     private List<GameObject> expInfoPanels = new List<GameObject>();
@@ -39,7 +39,7 @@ public class ChooseMenu : MonoBehaviour {
     [SerializeField]
     protected Texture2D m_directoryImage,
                         m_fileImage;
-    public GameObject blockingPanel;
+    [SerializeField] private GameObject blockingPanel;
 
     private void Start()
     {
@@ -86,7 +86,11 @@ public class ChooseMenu : MonoBehaviour {
             runButtonText.text = "Start experiment";
         }
 
+        //hide error texts
         loadSuccessful = true;
+        missingStuff = "";
+        errorText.SetActive(false);
+        otherErrorText.SetActive(false);
         //choose it
         chosenExperiment = e;
         errorText.SetActive(false);
@@ -126,7 +130,7 @@ public class ChooseMenu : MonoBehaviour {
             AbstractPuzzle currentPuzzleType=null;
             foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
             {
-                if (puzzleType.typeName == e.puzzleType)
+                if (puzzleType.TypeName == e.puzzleType)
                     currentPuzzleType = puzzleType;
             }
             if(currentPuzzleType==null)
@@ -139,11 +143,14 @@ public class ChooseMenu : MonoBehaviour {
             for (int j = 0; j < c.puzzles.Count; j++)//inside fill out info about each puzzle that the configuration contains
             {
                 var q = Instantiate(currentPuzzleType.infoPanelPrefab, InnerScrollViewContent.transform);
-                bool success = currentPuzzleType.FillTheInfoPanel(q, c.puzzles[j]);
-                if (!success)
+                string problems = currentPuzzleType.FillTheInfoPanel(q, c.puzzles[j]);
+                if (problems != null)
+                {
                     loadSuccessful = false;
+                    missingStuff += problems + "\n";
+                }
             }
-            if(!File.Exists(e.resultsFile))//in case of problems with access to results file
+            if(!File.Exists(Application.dataPath + e.resultsFile))//in case of problems with access to results file
             {
                 loadSuccessful = false;
                 missingStuff += e.resultsFile + "\n";
@@ -231,7 +238,7 @@ public class ChooseMenu : MonoBehaviour {
             if (!loadSuccessful)
             {
                 otherErrorText.gameObject.SetActive(true);
-                otherErrorText.GetComponentInChildren<Text>().text = "missing file(s) at:\n" + missingStuff;
+                otherErrorText.GetComponentInChildren<Text>().text = missingStuff;
             }
         }
     }
@@ -280,6 +287,12 @@ public class ChooseMenu : MonoBehaviour {
     /// <param name="path">path to the selected file</param>
     protected void FileSelectedCallback(string path)
     {
+        //hide error texts
+        loadSuccessful = true;
+        missingStuff = "";
+        errorText.SetActive(false);
+        otherErrorText.SetActive(false);
+
         m_fileBrowser = null;        
         blockingPanel.SetActive(false);
 
@@ -323,7 +336,7 @@ public class ChooseMenu : MonoBehaviour {
                 }
                 using (StreamReader file = new StreamReader(path))
                 {
-                    //read info from first 2 lines of log file (there should be the config name and th eplayer id)
+                    //read info from first 2 lines of log file (there should be the config name and the player id)
                     name = file.ReadLine();
                     id = file.ReadLine();
                     file.Close();
@@ -355,10 +368,29 @@ public class ChooseMenu : MonoBehaviour {
             e.name = "Replay " + id + ", " + name;
             e.puzzleType = c.puzzleType;
             e.configs = new List<Configuration> { c };
-            //start that experiment in replay mode (so that the rest of the log file will be used to simulate player&experomentor actions)
-            NewManager.instance.StartExperiment(e, false, true);
-            MenuLogic.instance.chooseMenuCanvas.SetActive(false);
-            MenuLogic.instance.spectatorCanvas.SetActive(true);
+
+            //check for missing things
+            foreach (AbstractPuzzle type in NewManager.instance.puzzleTypes)
+            {
+                if(e.puzzleType==type.name)
+                {
+                    string m = "";
+                    if((m=type.CheckForMissingThings(c))!=null)
+                    {
+                        loadSuccessful = false;
+                        otherErrorText.SetActive(true);
+                        otherErrorText.GetComponentInChildren<Text>().text = m;
+                    }                    
+                }
+            }
+
+            if (loadSuccessful)
+            {
+                //start that experiment in replay mode (so that the rest of the log file will be used to simulate player&experomentor actions)
+                NewManager.instance.StartExperiment(e, false, true);
+                MenuLogic.instance.chooseMenuCanvas.SetActive(false);
+                MenuLogic.instance.spectatorCanvas.SetActive(true);
+            }
         }
     }
 }

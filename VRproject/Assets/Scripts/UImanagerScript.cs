@@ -8,13 +8,11 @@ public class UImanagerScript : MonoBehaviour {
 
     //switching cameras
 
-    /// <summary> list of available cameras in the virtual room </summary>
-    public List<GameObject> cams = new List<GameObject>();
+    [SerializeField] private List<GameObject> cams = new List<GameObject>();// list of available cameras in the virtual room 
     private int camCount;
     private int currentCam;
 
-    /// <summary> popup panel with Yes and No buttons </summary>
-    public GameObject popupPanel;
+    [SerializeField] private GameObject popupPanel;
     private bool timeStopped = false;
 
     /// <summary>

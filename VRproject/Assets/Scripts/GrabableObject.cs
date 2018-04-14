@@ -103,9 +103,9 @@ public class GrabableObject:MonoBehaviour{
     }
 
     /// <summary>
-    /// <para>simply disconnects this object from controller, does not call OnTriggerReleased</para>
-    /// <para>called when player did not want to drop it, the game snatched the item out of his hands (example: the held item was respawned)</para>
+    /// simply disconnects this object from controller, does not call OnTriggerReleased
     /// </summary>
+    /// <remarks>called when player did not want to drop it, the game snatched the item out of his hands (example: the held item was respawned)</remarks>
     public virtual void OnSnatched()
     {
         CurrentController.StopHoldingIt();

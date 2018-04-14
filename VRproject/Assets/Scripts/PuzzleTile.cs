@@ -30,7 +30,7 @@ public class PuzzleTile : GrabableObject {
 
         foreach (AbstractPuzzle puzzleType in NewManager.instance.puzzleTypes)
         {
-            if(puzzleType.typeName=="CubePuzzle")
+            if(puzzleType.TypeName=="CubePuzzle")
                 cp = (CubePuzzle)puzzleType;
         }
 
@@ -47,7 +47,7 @@ public class PuzzleTile : GrabableObject {
          //throw
             //logging
             string hand; if (controller.isLeft) hand = "left"; else hand = "right";
-            Logger.instance.Log(Time.time + " Drop " + hand);
+            Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Drop " + hand);
 
             base.OnTriggerReleased(controller,true);
         }
@@ -71,7 +71,7 @@ public class PuzzleTile : GrabableObject {
             //logging
             string hand; if (controller.isLeft) hand = "left"; else hand = "right";
             Quaternion gtr = gameObject.transform.rotation;
-            Logger.instance.Log(Time.time + " Place " + hand + " " + placedAt.ContainerIndex + " " + gtr.x + " " + gtr.y + " " + gtr.z + " " + gtr.w);
+            Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Place " + hand + " " + placedAt.ContainerIndex + " " + gtr.x + " " + gtr.y + " " + gtr.z + " " + gtr.w);
 
             //CubePuzzle zkontroluje, jestli se timto nahodou nedokoncila cela skladacka
             cp.OnCubePlaced(placedAt.Matches);
@@ -84,7 +84,7 @@ public class PuzzleTile : GrabableObject {
     {
         //logging
         string hand; if (controller.isLeft) hand = "left"; else hand = "right";
-        Logger.instance.Log(Time.time+" Grab "+ hand + " " +tileIndex);
+        Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Grab "+ hand + " " +tileIndex);
 
         base.OnTriggerPressed(controller);
         PhysicsCollider.size = new Vector3(0.005f, 0.005f, 0.005f);//shrink the physics collider for easier manipulation with the held cube
@@ -122,7 +122,7 @@ public class PuzzleTile : GrabableObject {
         if (CurrentController != null)//if in hand, log this as a drop, otherwise we do not need to log that
         {
             string hand; if (CurrentController.isLeft) hand = "left"; else hand = "right";
-            Logger.instance.Log(Time.time + " Respawn " + hand + " " + tileIndex);
+            Logger.instance.Log(Time.time.ToString(System.Globalization.CultureInfo.InvariantCulture) + " Respawn " + hand + " " + tileIndex);
         }
 
         OnRespawn();
@@ -319,8 +319,8 @@ public class PuzzleTile : GrabableObject {
 
 
     /// <summary>
-    /// <para>simulates dropping this tile during logfile replay</para>
-    /// <para>visualizes - moves the cube back to its spawn position</para>
+    /// simulates dropping this tile during logfile replay
+    /// (moves the cube back to its spawn position)
     /// </summary>
     public void SimulateDrop()
     {
@@ -330,9 +330,9 @@ public class PuzzleTile : GrabableObject {
 
 
     /// <summary>
-    /// <para>simulates grabbing this tile during logfile replay if this tile has index <paramref name="index"/></para>
-    /// <para>just handles possible OnCubeRemove, the visualisation of grabbing must be done in the caller</para>
+    /// simulates grabbing this tile during logfile replay if this tile has index <paramref name="index"/>
     /// </summary>
+    /// <remarks>just handles possible OnCubeRemove, the visualisation of grabbing must be done in the caller</remarks>
     /// <param name="index">grabbed cube index</param>
     /// <returns></returns>
     public bool IfItIsYouSimulateGrab(int index)
@@ -350,9 +350,9 @@ public class PuzzleTile : GrabableObject {
     }
 
     /// <summary>
-    /// <para>simulates placing this tile at <paramref name="containerIndex"/> during logfile replay</para>
-    /// <para>also visualizes - moves the cube to position of selected container</para>
+    /// simulates placing this tile at <paramref name="containerIndex"/> during logfile replay
     /// </summary>
+    /// <remarks>also visualizes - moves the cube to position of selected container</remarks>
     /// <param name="containerIndex">index of the used container</param>
     /// <param name="rot">rotation of the used tile</param>
     public void SimulatePlaceTo(int containerIndex, Quaternion rot)
