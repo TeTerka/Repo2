@@ -17,6 +17,7 @@ public class ExpMenu : MonoBehaviour {
     private GameObject InnerScrollViewContent;
     [SerializeField] private ConfigMenu cm;
     [SerializeField] private InputField tableHeigthInputField;
+    [SerializeField] private Dropdown languageDropdown;
 
     [Header("PopupPanel")]
     [SerializeField] private GameObject popupPanel;
@@ -215,6 +216,7 @@ public class ExpMenu : MonoBehaviour {
         e.name = expName.text;
         e.puzzleType = currentPuzzleType.TypeName;
         e.defaultTableHeigth = h;
+        e.defaultLanguage = languageDropdown.options[languageDropdown.value].text;
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
@@ -235,7 +237,7 @@ public class ExpMenu : MonoBehaviour {
             //add a header to the file
             using (StreamWriter sw = new StreamWriter(Application.dataPath + e.resultsFile, true))
             {
-                sw.WriteLine("id,roomX,roomZ,table heigth,config name,puzzle name,width,heigth,time spent,score");
+                sw.WriteLine("id,language,roomX,roomZ,table heigth,config name,puzzle name,width,heigth,time spent,score");
                 sw.Close();
             }
             //create file with experiment info

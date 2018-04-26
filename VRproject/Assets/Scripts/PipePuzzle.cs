@@ -34,9 +34,9 @@ public class PipePuzzle : AbstractPuzzle
     private GameObject button;
 
     [Header("model pictures")]
-    [SerializeField] private Texture2D startPicture;
-    [SerializeField] private Texture2D tutPicture;
-    [SerializeField] private Texture2D phasePicture;
+    [SerializeField] private GameObject startPanelPrefab;
+    [SerializeField] private GameObject tutPanelPrefab;
+    [SerializeField] private GameObject phasePanelPrefab;
 
     [Header("stuff for menu settings")]
     [SerializeField] private GameObject table;//to be able to get table size
@@ -371,7 +371,7 @@ public class PipePuzzle : AbstractPuzzle
         float x = 5 * pipeSize * 2f;
         float y = 3 * pipeSize * 2f;
         nm.MultiplyWallpictureScale(x, y);
-        nm.SetWallPicture(phasePicture);
+        NewManager.instance.SetWallPicturePanel(phasePanelPrefab);
     }
 
     public override void StartStart()
@@ -385,7 +385,7 @@ public class PipePuzzle : AbstractPuzzle
         float x = 5 * pipeSize * 2f;
         float y = 3 * pipeSize * 2f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
-        NewManager.instance.SetWallPicture(startPicture);
+        NewManager.instance.SetWallPicturePanel(startPanelPrefab);
     }
 
     public override void OnTableHeigthChange()
@@ -406,7 +406,7 @@ public class PipePuzzle : AbstractPuzzle
         float x = 5 * pipeSize * 2f;
         float y = 3 * pipeSize * 2f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
-        NewManager.instance.SetWallPicture(tutPicture);
+        NewManager.instance.SetWallPicturePanel(tutPanelPrefab);
     }
 
     public override void OnTimerStop()

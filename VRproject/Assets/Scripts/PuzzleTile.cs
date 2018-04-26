@@ -6,7 +6,7 @@ using UnityEngine;
 /// script for a piece of CubePuzzle (the cube)
 /// </summary>
 /// <remarks>
-/// must have an Animator component (for the respawn animation)
+/// must have an Animator component (for the respawn animation) and two collider components (one has IsTrigger=true, other one false)
 /// </remarks>
 public class PuzzleTile : GrabableObject {
 
@@ -23,6 +23,11 @@ public class PuzzleTile : GrabableObject {
     //for looking for colliding containers
     private List<TileContainer> listOfContainers;
 
+    /// <summary>the collider for collision computations</summary>
+    public BoxCollider PhysicsCollider { get; private set; }
+
+    /// <summary>the collider for detecting atemps to grab this object (IsTrigger should be set to true)</summary>
+    public BoxCollider GrabCollider { get; private set; }
 
     public override void Awake()
     {
@@ -38,6 +43,16 @@ public class PuzzleTile : GrabableObject {
         listOfContainers = cp.ContainerList;
 
         animator = GetComponent<Animator>();
+
+        //finds the two colliders, the trigger one will be GrabCollider, the other one PhysicsCollider
+        BoxCollider[] c = GetComponents<BoxCollider>();
+        foreach (BoxCollider collider in c)
+        {
+            if (collider.isTrigger)
+                GrabCollider = collider;
+            else
+                PhysicsCollider = collider;
+        }
     }
 
     public override void OnTriggerReleased(ControllerScript controller,bool applyVelocity)

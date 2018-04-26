@@ -22,6 +22,7 @@ public class SpeechBehaviour : StateMachineBehaviour {
     /// <summary>true = play also the audio files attached to each sentence</summary>
     [SerializeField] private bool useSound;
 
+
     private NewManager mngr;
 
     private void Awake()
@@ -41,10 +42,12 @@ public class SpeechBehaviour : StateMachineBehaviour {
                 }
             }
         }
+
     }
 
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+
         //book the subtitles canvas
         mngr.whoWantsSubtitles = stateInfo.shortNameHash;
         subtitlesCanvas.SetActive(true);
@@ -59,11 +62,11 @@ public class SpeechBehaviour : StateMachineBehaviour {
             npcName = mngr.NpcName;
             if (sentences[0].replaceAlex)
             {
-                subtitleText.text = sentences[0].text.Replace("Alex", npcName);
+                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[0].text].Replace("Alex", npcName);
             }
             else
             {
-                subtitleText.text = sentences[0].text;
+                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[0].text];
             }
             //manage sound
             if (useSound)
@@ -96,14 +99,12 @@ public class SpeechBehaviour : StateMachineBehaviour {
         {
             if (sentences[i].replaceAlex)
             {
-                subtitleText.text = sentences[i].text.Replace("Alex", npcName);
+                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[i].text].Replace("Alex", npcName);
             }
             else
             {
-                subtitleText.text = sentences[i].text;
+                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[i].text]; 
             }
-            i++;
-            time = 0;
             //manage sound
             if (useSound)
             {
@@ -123,6 +124,9 @@ public class SpeechBehaviour : StateMachineBehaviour {
                 }
                 mouth.Play();
             }
+
+            i++;
+            time = 0;
         }
     }
 
@@ -145,6 +149,7 @@ public class SpeechBehaviour : StateMachineBehaviour {
                 mouth.Stop();
             }
         }
+
     }
 
 }

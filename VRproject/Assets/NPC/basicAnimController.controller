@@ -64,7 +64,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   timeForASentence: 3
   sentences:
-  - text: "Za\u010D\xEDn\xE1me..."
+  - text: anim1_gesture1
     replaceAlex: 0
     audio: {fileID: 0}
   useSound: 0
@@ -79,24 +79,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f2ff4d9fb8265f4f8c5ea2d102ca0b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  timeForASentence: 3
+  timeForASentence: 4
   sentences:
-  - text: "V\xEDtejte, m\xE9 jm\xE9no je Alex"
+  - text: anim1_talk1
     replaceAlex: 1
     audio: {fileID: 0}
-  - text: "a budu v\xE1s prov\xE1zet t\xEDmto experimentem."
+  - text: anim1_talk2
     replaceAlex: 0
     audio: {fileID: 0}
-  - text: "V\xEDtejte v tutorialu."
+  - text: anim1_talk3
     replaceAlex: 0
     audio: {fileID: 0}
-  - text: "\u0158i\u010Fte se instrukcemi na tabuli za mnou."
-    replaceAlex: 0
-    audio: {fileID: 0}
-  - text: "Po dokon\u010Den\xED tutori\xE1lu za\u010Dne prvn\xED \u010D\xE1st experimentu."
-    replaceAlex: 0
-    audio: {fileID: 0}
-  - text: "Hodn\u011B \u0161t\u011Bst\xED."
+  - text: anim1_talk4
     replaceAlex: 0
     audio: {fileID: 0}
   useSound: 0
@@ -722,9 +716,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.25
-  m_TransitionOffset: 0
-  m_ExitTime: 0.99095297
+  m_TransitionDuration: 1.26614
+  m_TransitionOffset: 0.34981206
+  m_ExitTime: 0.58088714
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0

@@ -365,7 +365,8 @@ public class ChooseMenu : MonoBehaviour {
             }
             //create fake experiment containing only this config (but dont create any result folders etc., also dont add it to MenuLogic list of experiments)
             Experiment e = new Experiment();
-            e.defaultTableHeigth = 0.5f;//oooooooooooooooooooooooooooooooooooemh...
+            e.defaultTableHeigth = 0.5f;
+            e.defaultLanguage = "en";
             e.name = "Replay " + id + ", " + name;
             e.puzzleType = c.puzzleType;
             e.configs = new List<Configuration> { c };

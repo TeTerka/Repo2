@@ -50,6 +50,8 @@ public class NewManager : MonoBehaviour {
     [Header("model picture")]
     [SerializeField] private Renderer modelPictureFrame;
     [SerializeField] private Transform imageHolder;
+    [SerializeField] private GameObject wallPictureCanvas;
+    private GameObject currentPanel;
 
     [Header("room scale stuff")]
     [SerializeField] private Transform level;
@@ -83,6 +85,7 @@ public class NewManager : MonoBehaviour {
     [SerializeField] private Button pauseButton;
     [SerializeField] private InputField tableHeigthInputField;
     [SerializeField] private GameObject theTable;
+    [SerializeField] private Dropdown languageDropdown;
 
     //scrollview UI
     [SerializeField] private GameObject phaseScrollContent;
@@ -109,6 +112,7 @@ public class NewManager : MonoBehaviour {
     public int whoWantsSubtitles = -1;
     /// <summary>name of currently used npc model</summary>
     public string NpcName { get; private set; }
+
 
 
     //--------------------------------------------------------------------------------------------------------------------------
@@ -178,6 +182,7 @@ public class NewManager : MonoBehaviour {
             }
         }
     }
+
 
     /// <summary>
     /// checks if there is any problematic new puzzle type or npc model or npc behaviour
@@ -288,6 +293,18 @@ public class NewManager : MonoBehaviour {
         theTable.transform.localScale = new Vector3(theTable.transform.localScale.x, h * 2, theTable.transform.localScale.z);
         tableHeigthInputField.text = h.ToString();
 
+        //set language to default
+        int n = 0;
+        for(int i=0;i<languageDropdown.options.Count;i++)
+        {
+            if(languageDropdown.options[i].text==e.defaultLanguage)
+            {
+                n = i;
+                break;
+            }
+        }
+        languageDropdown.value = n;
+
         //start the first configuration (every experiment certainly has at least one)
         StartConfig(e.configs[0]);
     }
@@ -305,6 +322,7 @@ public class NewManager : MonoBehaviour {
         }
         playeridInputField.interactable = b;
         tableHeigthInputField.interactable = b;
+        languageDropdown.interactable = b;
         pauseButton.interactable = !b;
     }
 
@@ -435,6 +453,18 @@ public class NewManager : MonoBehaviour {
         theTable.transform.localScale = new Vector3(theTable.transform.localScale.x, h * 2, theTable.transform.localScale.z);
         tableHeigthInputField.text = h.ToString();
 
+        //set language to default
+        int n = 0;
+        for (int i = 0; i < languageDropdown.options.Count; i++)
+        {
+            if (languageDropdown.options[i].text == activeExperiment.defaultLanguage)
+            {
+                n = i;
+                break;
+            }
+        }
+        languageDropdown.value = n;
+
         //general preparations
         InStart = true;
         phaseLabels[0].GetComponent<Image>().color = highlightColor;
@@ -453,6 +483,7 @@ public class NewManager : MonoBehaviour {
             //and to change player id, table heigth etc.
             playeridInputField.interactable = true;
             tableHeigthInputField.interactable = true;
+            languageDropdown.interactable = true;
 }
 
         //animation of the virtal agent
@@ -472,6 +503,10 @@ public class NewManager : MonoBehaviour {
     /// </summary>
     private void FinishStartPhase()
     {
+        tableHeigthInputField.interactable = false;
+        languageDropdown.interactable = false;
+        playeridInputField.interactable = false;
+
         //logging - creating a new logfile
         if ((!InReplayMode) && (!InTestMode) && (idInuput.text != ""))
         {
@@ -596,18 +631,18 @@ public class NewManager : MonoBehaviour {
             PuzzleData puzzle = ActiveConfig.puzzles[ActivePuzzleIndex];
             if (!PhaseFinished)//if this was a forced phase finish, instead of time and score "invalid" will be saved
             {
-                dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
+                dataToSave = idInuput.text+","+ languageDropdown.options[languageDropdown.value].text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
             }
             else
             {
-                //save data (format: id,roomX,roomZ,tableHeight,config,puzzle,w,h,time left,score)
+                //save data (format: id,language,roomX,roomZ,tableHeight,config,puzzle,w,h,time left,score)
                 if (timeLeft <= 0)//if ended because time ran out
                 {
-                    dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "max" + "," + skore;
+                    dataToSave = idInuput.text + "," + languageDropdown.options[languageDropdown.value].text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "max" + "," + skore;
                 }
                 else//if ended because puzzle was solved
                 {
-                    dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
+                    dataToSave = idInuput.text + "," + languageDropdown.options[languageDropdown.value].text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
                 }
             }
             try
@@ -862,10 +897,22 @@ public class NewManager : MonoBehaviour {
     /// <summary>
     /// sets the content of the wall picture
     /// </summary>
-    /// <param name="t">the image to display</param>
-    public void SetWallPicture(Texture t)
+    /// <param name="panel">the panel to be placed on wall as a world-space canvas</param>
+    public void SetWallPicturePanel(GameObject panel)
     {
+        if (currentPanel != null) { Destroy(currentPanel); }
+        var p = Instantiate(panel, wallPictureCanvas.transform);
+        currentPanel = p;
+    }
+    /// <summary>
+    /// sets the content of the wall picture to a single image <paramref name="t"/>
+    /// </summary>
+    /// <param name="t">the image to display on wall picture</param>
+    public void SetWallPicturePanelBasic(Texture2D t)
+    {
+        if (currentPanel != null) { Destroy(currentPanel); }
         modelPictureFrame.material.mainTexture = t;
+        currentPanel = null;
     }
 
     /// <summary>

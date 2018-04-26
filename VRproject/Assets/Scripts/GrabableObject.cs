@@ -5,7 +5,7 @@
 /// object with this script on can be grabbed, dopped and thrown away
 /// </summary>
 /// <remarks>
-/// object must have a rigidbody component and tag "GrabableObject" and two collider components (one has IsTrigger=true, other one false)
+/// object must have a rigidbody component and tag "GrabableObject"
 /// </remarks>
 public class GrabableObject:MonoBehaviour{
 
@@ -18,12 +18,6 @@ public class GrabableObject:MonoBehaviour{
 
     private Rigidbody rb;
     private FixedJoint fj;
-
-    /// <summary>the collider for collision computations</summary>
-    public BoxCollider PhysicsCollider { get; private set; }
-
-    /// <summary>the collider for detecting atemps to grab this object (IsTrigger should be set to true)</summary>
-    public BoxCollider GrabCollider { get; private set; }
 
     /// <summary>true = this object currently cannot move (IsKinematic on its Rigidbody is set to true)</summary>
     public bool IsFrozen { get; private set; }
@@ -40,16 +34,6 @@ public class GrabableObject:MonoBehaviour{
         }
 
         fj = null;
-
-        //finds the two colliders, the trigger one will be GrabCollider, the other one PhysicsCollider
-        BoxCollider[] c = GetComponents<BoxCollider>();
-        foreach (BoxCollider collider in c)
-        {
-            if (collider.isTrigger)
-                GrabCollider = collider;
-            else
-                PhysicsCollider = collider;
-        }
     }
 
     /// <summary>

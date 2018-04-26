@@ -142,6 +142,8 @@ public class Experiment
     public string resultsFile;
     /// <summary>default hight of the table in meters (min 0.5m, max 2m)</summary>
     public float defaultTableHeigth;
+    /// <summary>default lenguage for the player</summary>
+    public string defaultLanguage;
     /// <summary>which puzzle type is used</summary>
     public string puzzleType;
     [XmlArray("Confiurations")]

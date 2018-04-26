@@ -43,9 +43,9 @@ public class CubePuzzle : AbstractPuzzle
     public int ModelPictureNumber { get; private set; }
 
     [Header("start&tut phase stuff")]
-    [SerializeField] private Texture welcomePicture;
     [SerializeField] private Texture2D startCubeTexture;
-    [SerializeField] private Texture tutorialPicture;
+    [SerializeField] private GameObject startPanelPrefab;
+    [SerializeField] private GameObject tutPanelPrefab;
     [SerializeField] private Texture2D tutInputPicture;
     [SerializeField] private Transform startContainerSpot;
 
@@ -493,7 +493,7 @@ public class CubePuzzle : AbstractPuzzle
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
         //set model picture
-        NewManager.instance.SetWallPicture(modelPictures[puzzleIndex]);
+        NewManager.instance.SetWallPicturePanelBasic(modelPictures[puzzleIndex]);
 
         //create cubes and containers
         GeneratePuzzleTiles(puzzle.heigthpx, puzzle.widthpx, texturesForCubes[puzzleIndex]);
@@ -506,7 +506,7 @@ public class CubePuzzle : AbstractPuzzle
         float y = 3 * TileSize * 2.5f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
-        NewManager.instance.SetWallPicture(welcomePicture);
+        NewManager.instance.SetWallPicturePanel(startPanelPrefab);
 
         //create the start cube
         List<Texture2D> list = new List<Texture2D>();
@@ -535,7 +535,8 @@ public class CubePuzzle : AbstractPuzzle
         float y = 3 * TileSize * 2.5f;
         NewManager.instance.MultiplyWallpictureScale(x, y);
 
-        NewManager.instance.SetWallPicture(tutorialPicture);
+        NewManager.instance.SetWallPicturePanel(tutPanelPrefab);
+
         //create cubes and containers
         GeneratePuzzleTiles(2, 2, tutTexturesForCubes);
     }
