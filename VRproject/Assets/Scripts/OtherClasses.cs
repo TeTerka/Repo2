@@ -59,6 +59,8 @@ public class Sentence
 public class PuzzleData
 {
     //for cubes
+    /// <summary>true = puzzle tiles can be spawned also under the table</summary>
+    public bool allowCubesUnderTable;
     /// <summary>path to the picture(CubePuzzle)</summary>
     public string pathToImage;
     [XmlArray("spawnPointMix")]
@@ -138,6 +140,8 @@ public class Experiment
     public string name;
     /// <summary>path to the file where results should be saved</summary>
     public string resultsFile;
+    /// <summary>default hight of the table in meters (min 0.5m, max 2m)</summary>
+    public float defaultTableHeigth;
     /// <summary>which puzzle type is used</summary>
     public string puzzleType;
     [XmlArray("Confiurations")]
@@ -172,6 +176,17 @@ public interface IInteractibleObject
     /// </summary>
     /// <param name="controller">controller that pressed the trigger</param>
     void OnTriggerPressed(ControllerScript controller);
+
+    /// <summary>
+    /// what should happen every frame while a controller is hovering on this object 
+    /// </summary>
+    /// <remarks>can be used for example for highlighting</remarks>
+    void OnHoverStart();
+    /// <summary>
+    /// what should happen when controller stops hovering on this object
+    /// </summary>
+    /// <remarks>can be used for example for highlighting</remarks>
+    void OnHoverEnd();
 }
 
 

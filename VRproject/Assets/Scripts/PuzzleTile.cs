@@ -19,7 +19,7 @@ public class PuzzleTile : GrabableObject {
     //characteristics
     private int tileIndex;
     private Animator animator;
-    private Vector3 spawnedAt;//spawnPoint belonging to this tile (so that it can be respawned there)
+    public Vector3 SpawnedAt { get; private set; }//spawnPoint belonging to this tile (so that it can be respawned there)
     //for looking for colliding containers
     private List<TileContainer> listOfContainers;
 
@@ -103,7 +103,7 @@ public class PuzzleTile : GrabableObject {
     public void Initialize(int index,Vector3 spawnPoint)
     {
         tileIndex = index;
-        spawnedAt = spawnPoint;
+        SpawnedAt = spawnPoint;
         listOfContainers = cp.ContainerList;
     }
 
@@ -168,7 +168,7 @@ public class PuzzleTile : GrabableObject {
         }
         else
         {
-            transform.position = spawnedAt;
+            transform.position = SpawnedAt;
         }
 
     }
@@ -217,7 +217,7 @@ public class PuzzleTile : GrabableObject {
         if (!IsFree())//look for the nearest container only for the tile in hand
         {
             //finds the nearest container, but max distance is TileSize*2
-            float minDist = cp.TileSize*2;
+            float minDist = cp.TileSize*1.5f;
             TileContainer closest = null;
             foreach (TileContainer container in listOfContainers)
             {
@@ -324,7 +324,7 @@ public class PuzzleTile : GrabableObject {
     /// </summary>
     public void SimulateDrop()
     {
-        this.gameObject.transform.position = spawnedAt;
+        this.gameObject.transform.position = SpawnedAt;
         this.Unfreez();
     }
 

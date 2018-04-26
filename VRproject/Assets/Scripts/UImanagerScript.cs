@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Controls for the spectator canvas
@@ -14,6 +15,7 @@ public class UImanagerScript : MonoBehaviour {
 
     [SerializeField] private GameObject popupPanel;
     private bool timeStopped = false;
+
 
     /// <summary>
     /// action for "Pause" button, can stop time during the replay mode only

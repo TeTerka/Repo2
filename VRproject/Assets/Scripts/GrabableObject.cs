@@ -72,12 +72,17 @@ public class GrabableObject:MonoBehaviour{
         else
         {
             fj = this.gameObject.AddComponent<FixedJoint>();
-            fj.breakForce = 20000;
-            fj.breakTorque = 20000;
+            fj.breakForce = 5000;
+            fj.breakTorque = 5000;
             fj.connectedBody = controller.GetComponent<Rigidbody>();
         }
 
         CurrentController = controller;
+    }
+
+    private void OnJointBreak(float breakForce)
+    {
+        OnTriggerReleased(CurrentController,false);
     }
 
     /// <summary>

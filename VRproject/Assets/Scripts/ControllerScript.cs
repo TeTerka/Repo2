@@ -11,6 +11,7 @@ public class ControllerScript : MonoBehaviour {
     public bool isLeft;
     /// <summary>the sphere defining the controller interaction range(the Logger needs to know this)</summary>
     [SerializeField] private Transform fingerTip;
+    private Renderer sphereRenderer;//the renderer of fingerTip object
 
     //getting information from Vive controllers
     private SteamVR_TrackedObject trackedObj;
@@ -28,6 +29,13 @@ public class ControllerScript : MonoBehaviour {
 
     private GrabableObject heldObject;//object held by this controller
 
+
+    /// <summary>currently closest colliding object</summary>
+    public Collider CollidingThing { get; private set; }
+
+    [SerializeField] private Material blue;//normal material
+    [SerializeField] private Material green;//highlighted material
+
     /// <summary>
     /// releasing the object without the call of OnTriggerReleased
     /// </summary>
@@ -39,6 +47,7 @@ public class ControllerScript : MonoBehaviour {
     void Awake()
     {
         trackedObj = GetComponent<SteamVR_TrackedObject>();
+        sphereRenderer = fingerTip.gameObject.GetComponent<Renderer>();
     }
 
     void FixedUpdate()
@@ -46,6 +55,47 @@ public class ControllerScript : MonoBehaviour {
         //update cashed info
         Velocity = Controller.velocity;
         AngularVelocity = Controller.angularVelocity;
+
+        //find the closest currently colliding object
+        Collider[] touchedObjects = Physics.OverlapSphere(fingerTip.position, fingerTip.lossyScale.x / 2f);
+        Collider col = null;//this will be the new closest colliding object
+        float maxDist = float.MaxValue;
+        foreach (Collider obj in touchedObjects)
+        {
+            if ((obj.isTrigger && obj.CompareTag("GrabableObject")) || obj.CompareTag("InteractibleObject"))
+            {
+                float dist = Vector3.Distance(fingerTip.position, obj.gameObject.transform.position);
+                if (dist <= maxDist)
+                {
+                    maxDist = dist;
+                    col = obj;
+                }
+            }
+        }
+        //call the onHoverEnd effect on the previous colliding object
+        if (CollidingThing != null && CollidingThing.CompareTag("InteractibleObject"))
+        {
+            CollidingThing.gameObject.GetComponent<IInteractibleObject>().OnHoverEnd();
+        }
+        if (col==null)
+        {
+            //if it does not touch anythong, stop highlighting the range sphere
+            sphereRenderer.material = blue;
+            CollidingThing = null;
+        }
+        else
+        {
+            //call onHover effect on the colliding object
+            if (col.CompareTag("InteractibleObject"))
+            {
+                col.gameObject.GetComponent<IInteractibleObject>().OnHoverStart();
+            }
+
+            //start highlighting the range sphere
+            sphereRenderer.material = green;
+            CollidingThing = col;
+        }
+        
     }
 
     void Update()
@@ -71,26 +121,24 @@ public class ControllerScript : MonoBehaviour {
     }
 
     /// <summary>
-    /// finds an object to interact with, interacts and calls OnTriggerPressed on it
+    /// checks if the currently colliding object is interactible, interacts and calls OnTriggerPressed on it
     /// </summary>
     private void FindInteractibleObject()
     {
-        Collider[] touchedObjects = Physics.OverlapSphere(fingerTip.position, fingerTip.lossyScale.x / 2f);
-
-        foreach (Collider obj in touchedObjects)
+        if (CollidingThing != null)
         {
-            if (obj.isTrigger && obj.CompareTag("GrabableObject") )
+            if (CollidingThing.CompareTag("GrabableObject"))
             {
-                heldObject = obj.GetComponent<GrabableObject>();
-                if(heldObject!=null)
+                heldObject = CollidingThing.GetComponent<GrabableObject>();
+                if (heldObject != null)
                     heldObject.OnTriggerPressed(this);
                 return;
             }
 
-            if(obj.CompareTag("InteractibleObject"))
+            if (CollidingThing.CompareTag("InteractibleObject"))
             {
-                IInteractibleObject iio = obj.GetComponent<IInteractibleObject>();
-                if (iio!=null)
+                IInteractibleObject iio = CollidingThing.GetComponent<IInteractibleObject>();
+                if (iio != null)
                     iio.OnTriggerPressed(this);
                 return;
             }

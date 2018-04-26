@@ -4,18 +4,21 @@ using UnityEngine;
 /// <summary>
 /// script for the button on the table in PipePuzzle, can end phase on click
 /// </summary>
-public class ButtonScript : MonoBehaviour
+/// <remarks>object must have animator component and a renderer</remarks>
+public class ButtonScript : MonoBehaviour,IInteractibleObject
 {
     private bool isClicking = false;
     private Animator animator;
+    private Renderer myRndr;
     private void Start()
     {
         animator = GetComponent<Animator>();
+        myRndr = GetComponentInChildren<Renderer>();
     }
-    private void OnTriggerEnter(Collider other)
+
+    public void OnTriggerPressed(ControllerScript controller)
     {
-        //clicks when touched by a contorller
-        if (other.CompareTag("Controller")&&(!NewManager.instance.InReplayMode))
+        if (!NewManager.instance.InReplayMode)
         {
             if ((!isClicking) && (!NewManager.instance.Switching))
             {
@@ -23,6 +26,7 @@ public class ButtonScript : MonoBehaviour
             }
         }
     }
+
 
     /// <summary>
     /// starts click animation and calls click effect
@@ -51,5 +55,14 @@ public class ButtonScript : MonoBehaviour
             PipePuzzle p = (PipePuzzle)NewManager.instance.CurrentPuzzle;//the casting is ok because the button is used only in PipePuzzle
             p.Check();
         }
+    }
+
+    public void OnHoverStart()
+    {
+        myRndr.material.color = new Color(0.7f, 1, 0.6f);
+    }
+    public void OnHoverEnd()
+    {
+        myRndr.material.color = Color.blue;
     }
 }

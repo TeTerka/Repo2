@@ -47,6 +47,7 @@ public class CubePuzzle : AbstractPuzzle
     [SerializeField] private Texture2D startCubeTexture;
     [SerializeField] private Texture tutorialPicture;
     [SerializeField] private Texture2D tutInputPicture;
+    [SerializeField] private Transform startContainerSpot;
 
     [Header("for generating spawnpoints")]
     [SerializeField] private Transform leftPoint;
@@ -146,9 +147,15 @@ public class CubePuzzle : AbstractPuzzle
         {
             p.pathToImage = texturePaths[i];
         }
+        //check cubes under table
+        p.allowCubesUnderTable = panel.GetComponentInChildren<Toggle>().isOn;
         //generate fixed random spawn position order
         p.spawnPointMix = new List<int>();
-        int nnnn = spawnPoints.Count + (p.heigthpx * p.widthpx);
+        int nnnn = 0;
+        if(p.allowCubesUnderTable)
+            nnnn = spawnPoints.Count + (p.heigthpx * p.widthpx);//use spawnpoints under table plus generated spawnpoints
+        else
+            nnnn = (p.heigthpx * p.widthpx);//use only generated spawnpoints
         for (int e = 0; e < nnnn; e++)
         {
             p.spawnPointMix.Add(e);
@@ -272,24 +279,47 @@ public class CubePuzzle : AbstractPuzzle
             //copy selected image to ImageCopies folder
             string fileName = path.Substring(path.LastIndexOf('\\'), path.LastIndexOf('.') - path.LastIndexOf('\\'));
             string fileType = path.Substring(path.LastIndexOf('.'));
-            int i = 0;
-            while (File.Exists(Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType))
-            {
-                i++;
-            }
+
+            string newPath = "";
             try
             {
-                File.Copy(path, Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType);
+                if (File.Exists(Application.dataPath.ToString() + "\\ImageCopies" + fileName + fileType))//file already exists in ImageCopies...
+                {
+                    if (FileCompare(path, Application.dataPath + "\\ImageCopies" + fileName + fileType))//...and is the same
+                    {
+                        newPath = fileName + fileType;
+                        //and do not copy anything
+                    }
+                    else//...but is different
+                    {
+                        int i = 0;
+                        //create unique file name
+                        while (File.Exists(Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType) && !FileCompare(path, Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType))
+                        {
+                            i++;
+                        }
+                        newPath = fileName + "(" + i + ")" + fileType;
+                        //actually copy the file to ImageCopies folder
+                        File.Copy(path, Application.dataPath + "\\ImageCopies" + newPath, true);
+                    }
+                }
+                else//file does not exist in ImageCopies
+                {
+                    newPath = fileName + fileType;
+                    //actually copy the file to ImageCopies folder
+                    File.Copy(path, Application.dataPath + "\\ImageCopies" + newPath, true);
+                }
+
             }
             catch
             {
                 ErrorCatcher.instance.Show("Problem with file " + path + " or folder " + Application.dataPath + "\\ImageCopies");
             }
             //save path to the image
-            texturePaths[activePanelNumber] = fileName + "(" + i + ")" + fileType;
+            texturePaths[activePanelNumber] = newPath;
 
             //show image in the panel
-            activePanel.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(Application.dataPath + "\\ImageCopies" + fileName + "(" + i + ")" + fileType);
+            activePanel.GetComponentInChildren<Button>().image.sprite = MenuLogic.instance.LoadNewSprite(Application.dataPath + "\\ImageCopies" + newPath);
             if (activePanel.GetComponentInChildren<Button>().image.sprite == null)//if picture loadig failed
             {   
                 activePanel.GetComponentInChildren<Button>().image.sprite = missingImage;
@@ -301,6 +331,55 @@ public class CubePuzzle : AbstractPuzzle
         }
         configMenuBlockingPanel.SetActive(false);
         activePanel.GetComponentInChildren<Button>().image.color = Color.white;//cancel possible error highlight
+    }
+
+    /// <summary>
+    /// helper function used to compare two files
+    /// </summary>
+    /// <param name="file1">path to file1</param>
+    /// <param name="file2">path ti file2</param>
+    /// <returns>true = the files are the same</returns>
+    private bool FileCompare(string file1, string file2)
+    {
+        int file1byte;
+        int file2byte;
+        FileStream fs1;
+        FileStream fs2;
+        string path1 = Path.GetFullPath(file1);
+        string path2 = Path.GetFullPath(file2);
+
+        //if the same file was referenced two times
+        if (path1 == path2)
+        {
+            return true;
+        }
+
+        fs1 = new FileStream(file1, FileMode.Open);
+        fs2 = new FileStream(file2, FileMode.Open);
+
+        // Check the file sizes. If they are not the same, the files 
+        // are not the same.
+        if (fs1.Length != fs2.Length)
+        {
+            fs1.Close();
+            fs2.Close();
+            return false;
+        }
+
+        // Read and compare a byte from each file until either a
+        // non-matching set of bytes is found or until the end of
+        // file1 is reached.
+        do
+        {
+            file1byte = fs1.ReadByte();
+            file2byte = fs2.ReadByte();
+        }
+        while ((file1byte == file2byte) && (file1byte != -1));
+
+        fs1.Close();
+        fs2.Close();
+
+        return ((file1byte - file2byte) == 0);
     }
 
     /// <summary>
@@ -436,6 +515,17 @@ public class CubePuzzle : AbstractPuzzle
             list.Add(startCubeTexture);
         }
         GeneratePuzzleTiles(1, 1, list);
+    }
+
+    public override void OnTableHeigthChange()
+    {
+        //this will be called only during start phase, so it adjusts only the position of the start cube and the one container
+        if (TileList.Count > 0)
+        {
+            TileList[0].transform.position = spawnPoints[0].position;
+        }
+        if (ContainerList.Count > 0)
+            ContainerList[0].transform.position = startContainerSpot.position;
     }
 
     public override void StartTut()
@@ -577,23 +667,26 @@ public class CubePuzzle : AbstractPuzzle
                 k++;
             }
         }
-
-        //generate spawnpoints
-        GenerateSpawnPoints(h, w);
-
-        //...and shuffle them according to Puzzle.spawnPointMix list
+        
+        //generate spawnpoints and shuffle them according to Puzzle.spawnPointMix list
         if (NewManager.instance.InStart)
         {
+            //generate spawnpoints
+            GenerateSpawnPositions(h, w,true);
             //start needs only one spawnpoint
             spawnPositions = new List<Vector3> { spawnPositions[0] };
         }
         else if (NewManager.instance.InTut)
         {
+            //generate spawnpoints
+            GenerateSpawnPositions(h, w, false);
             //tutorial needs only 4 spawnpoints
             spawnPositions = new List<Vector3> { spawnPositions[0], spawnPositions[1], spawnPositions[2], spawnPositions[3] };
         }
         else
         {
+            //generate spawnpoints
+            GenerateSpawnPositions(h, w, NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].allowCubesUnderTable);
             spawnPositions = SpecialShuffle(NewManager.instance.ActiveConfig.puzzles[NewManager.instance.ActivePuzzleIndex].spawnPointMix, spawnPositions);
         }
 
@@ -641,13 +734,17 @@ public class CubePuzzle : AbstractPuzzle
     /// </summary>
     /// <param name="h">heigth</param>
     /// <param name="w">width</param>
-    private void GenerateSpawnPoints(int h, int w)
+    private void GenerateSpawnPositions(int h, int w, bool underTable)
     {
         spawnPositions.Clear();
-        //firs add fixed spawnpoints created by hand in editor (for example the ones under the table)
-        foreach (Transform point in spawnPoints)
+
+        if (underTable)
         {
-            spawnPositions.Add(point.position);
+            //first add fixed spawnpoints created by hand in editor (the ones under the table)
+            foreach (Transform point in spawnPoints)
+            {
+                spawnPositions.Add(point.position);
+            }
         }
 
         //create more spawnpoint so that there is at least h*w of them
@@ -661,7 +758,7 @@ public class CubePuzzle : AbstractPuzzle
             {
                 float rand = Random.Range(0, offset - 0.05f);
                 float jRand = Random.Range(0, jOffset - 0.05f);
-                spawnPositions.Add(new Vector3(lp.x - (TileSize + offset) * i - (offset + (TileSize / 2) + rand), lp.y, lp.z - (TileSize + jOffset) * j + jRand));
+                spawnPositions.Add(new Vector3(lp.x - (TileSize + offset) * i - (offset + (TileSize / 2) + rand), lp.y, lp.z - (TileSize + jOffset) * j + jRand)); 
             }
         }
 
@@ -777,12 +874,14 @@ public class CubePuzzle : AbstractPuzzle
                 //mark that the cube is now in the left or right hand, and visualize it by moving it up to the replayCubePoint
                 if (hand == "left")
                 {
+                    if (rightHeld == cube.GetComponent<PuzzleTile>()) { rightHeld = null; }//for the case of grabing a cube from one hand to the other
                     if (leftHeld != null) { ErrorCatcher.instance.Show("Wrong format of this logfile: " + Logger.instance.PathToLogFile + " (illegal Grab action)"); return; }
                     leftHeld = cube.GetComponent<PuzzleTile>();
                     cube.transform.position = replayCubePoint.position + new Vector3(-0.2f, 0, 0);
                 }
                 else
                 {
+                    if (leftHeld == cube.GetComponent<PuzzleTile>()) { leftHeld = null; }//for the case of grabing a cube from one hand to the other
                     if (rightHeld != null) { ErrorCatcher.instance.Show("Wrong format of this logfile: " + Logger.instance.PathToLogFile + " (illegal Grab action)"); return; }
                     rightHeld = cube.GetComponent<PuzzleTile>();
                     cube.transform.position = replayCubePoint.position + new Vector3(0.2f, 0, 0);
@@ -843,5 +942,6 @@ public class CubePuzzle : AbstractPuzzle
     {
         Drop(n, hand);
     }
+
 }
 

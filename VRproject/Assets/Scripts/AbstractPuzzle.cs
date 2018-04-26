@@ -31,6 +31,10 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     /// </summary>
     public abstract void StartStart();
     /// <summary>
+    /// during start phase the table can be multipletimes changed, this method should adjust objects present in start phase everytime the table size changes
+    /// </summary>
+    public abstract void OnTableHeigthChange();
+    /// <summary>
     /// actions for end of the start phase
     /// </summary>
     public abstract void EndStart();
@@ -125,4 +129,5 @@ public abstract class AbstractPuzzle : MonoBehaviour {
     /// </summary>
     /// <param name="atoms">one parsed line from a log file</param>
     public abstract void Simulate(string[] atoms);
+
 }

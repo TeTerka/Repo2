@@ -56,6 +56,8 @@ public class NewManager : MonoBehaviour {
     [SerializeField] private Transform cameraRigPoint;
     [SerializeField] private Transform editorFloorScale;
     private Vector3 originalScale = new Vector3();
+    private float roomX = 0;//here will be stored the size of the final room in meters
+    private float roomZ = 0;
 
     [Header("referencies to UI")]
     [SerializeField] private UImanagerScript UImangr;
@@ -79,6 +81,8 @@ public class NewManager : MonoBehaviour {
     [SerializeField] private GameObject testModeHighlight;
     [SerializeField] private Text expNameText;
     [SerializeField] private Button pauseButton;
+    [SerializeField] private InputField tableHeigthInputField;
+    [SerializeField] private GameObject theTable;
 
     //scrollview UI
     [SerializeField] private GameObject phaseScrollContent;
@@ -153,14 +157,16 @@ public class NewManager : MonoBehaviour {
 
         //count new scale
         float floorScaleFactorX = editorFloorScale.localScale.x;
-        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//only half of the room is for the player       
-        Vector3 newScale = new Vector3(Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0)/ floorScaleFactorX, 1,Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2)/ floorScaleFactorZ);
+        float floorScaleFactorZ = editorFloorScale.localScale.z/2;//only half of the room is for the player  
+        roomX = Mathf.Abs(rect.vCorners0.v0 - rect.vCorners2.v0);
+        roomZ = Mathf.Abs(rect.vCorners0.v2 - rect.vCorners2.v2);
+        Vector3 newScale = new Vector3(roomX/ floorScaleFactorX, 1,roomZ/ floorScaleFactorZ);
         //scale the room
         level.localScale = newScale;
         //move camera rig to original position
         this.transform.position = cameraRigPoint.position;
         //save this scale of model picture so that puzzles can change it but they also can go back to this size
-        imageHolder.localScale = new Vector3(1 / imageHolder.lossyScale.x, 1, 1 / imageHolder.lossyScale.z);
+        imageHolder.localScale = new Vector3(1 / imageHolder.lossyScale.x, 1,0.2f);
         originalScale = imageHolder.localScale;
 
         //adjust scale to objects which should keep original size
@@ -277,6 +283,11 @@ public class NewManager : MonoBehaviour {
             SetControlsInteractible(true);
         }
 
+        //change table heigth
+        float h = e.defaultTableHeigth;
+        theTable.transform.localScale = new Vector3(theTable.transform.localScale.x, h * 2, theTable.transform.localScale.z);
+        tableHeigthInputField.text = h.ToString();
+
         //start the first configuration (every experiment certainly has at least one)
         StartConfig(e.configs[0]);
     }
@@ -293,6 +304,7 @@ public class NewManager : MonoBehaviour {
             item.interactable = b;
         }
         playeridInputField.interactable = b;
+        tableHeigthInputField.interactable = b;
         pauseButton.interactable = !b;
     }
 
@@ -418,6 +430,11 @@ public class NewManager : MonoBehaviour {
             Logger.instance.SetLoggerPath(null);
         }
 
+        //change table heigth
+        float h = activeExperiment.defaultTableHeigth;
+        theTable.transform.localScale = new Vector3(theTable.transform.localScale.x, h * 2, theTable.transform.localScale.z);
+        tableHeigthInputField.text = h.ToString();
+
         //general preparations
         InStart = true;
         phaseLabels[0].GetComponent<Image>().color = highlightColor;
@@ -433,9 +450,10 @@ public class NewManager : MonoBehaviour {
             {
                 item.interactable = true;
             }
-            //and to change player id
+            //and to change player id, table heigth etc.
             playeridInputField.interactable = true;
-        }
+            tableHeigthInputField.interactable = true;
+}
 
         //animation of the virtal agent
         if (TheNpc != null)
@@ -578,18 +596,18 @@ public class NewManager : MonoBehaviour {
             PuzzleData puzzle = ActiveConfig.puzzles[ActivePuzzleIndex];
             if (!PhaseFinished)//if this was a forced phase finish, instead of time and score "invalid" will be saved
             {
-                dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
+                dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "invalid" + "," + "invalid";
             }
             else
             {
-                //save data (format: id,config,puzzle,w,h,time left,score)
+                //save data (format: id,roomX,roomZ,tableHeight,config,puzzle,w,h,time left,score)
                 if (timeLeft <= 0)//if ended because time ran out
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "max" + "," + skore;
+                    dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + "max" + "," + skore;
                 }
                 else//if ended because puzzle was solved
                 {
-                    dataToSave = idInuput.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
+                    dataToSave = idInuput.text + "," + roomX + "," + roomZ + "," + tableHeigthInputField.text + "," + ActiveConfig.name + "," + puzzle.name + "," + puzzle.widthpx + "," + puzzle.heigthpx + "," + (ActiveConfig.timeLimit - timeLeft) + "," + skore;
                 }
             }
             try
@@ -651,7 +669,7 @@ public class NewManager : MonoBehaviour {
     /// <param name="skipCondition">true = do not check if phase is finished, just switch to the next one</param>
     public void TrySwitchPhase(bool skipCondition)
     {
-        if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled, valid and unique
+        if (InStart && (!InTestMode)&&(!InReplayMode))//in start phase only, check if playerID is filled, valid and unique + check table heigth etc. also filled correctly
         {
             if (MenuLogic.instance.IsValidName(idInuput.text) && (!activeExperiment.ids.Contains(idInuput.text)))
             {
@@ -661,6 +679,17 @@ public class NewManager : MonoBehaviour {
             else
             {
                 messageOutput.text = "Player ID must be filled, must not contain commas or quotes and must be unique!!!";
+                return;
+            }
+            float h = 0.5f;
+            if (float.TryParse(tableHeigthInputField.text, out h)&&h<=2 &&h>=0.5f)
+            {
+                tableHeigthInputField.interactable = false;
+                messageOutput.text = "";
+            }
+            else
+            {
+                messageOutput.text = "Table heigth must be filled, must be a number between 0.5 and 2.0 !!!";
                 return;
             }
         }
@@ -891,7 +920,23 @@ public class NewManager : MonoBehaviour {
         MenuLogic.instance.chooseMenuCanvas.SetActive(true);
     }
 
-
+    /// <summary>
+    /// reads an input field and changes the table height accordingly
+    /// </summary>
+    public void OnTableHeigthChange()
+    {
+        float h = 0.5f;
+        if (float.TryParse(tableHeigthInputField.text, out h) && h <= 2 && h >= 0.5f)
+        {
+            theTable.transform.localScale = new Vector3(theTable.transform.localScale.x, h * 2, theTable.transform.localScale.z);
+            messageOutput.text = "";
+            CurrentPuzzle.OnTableHeigthChange();
+        }
+        else
+        {
+            messageOutput.text = "Table heigth must be filled, must be a number between 0.5 and 2.0 !!!";
+        }
+    }
 
 
 

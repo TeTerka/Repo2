@@ -16,6 +16,7 @@ public class ExpMenu : MonoBehaviour {
     [SerializeField] private GameObject availableConfigScrollViewContent;
     private GameObject InnerScrollViewContent;
     [SerializeField] private ConfigMenu cm;
+    [SerializeField] private InputField tableHeigthInputField;
 
     [Header("PopupPanel")]
     [SerializeField] private GameObject popupPanel;
@@ -33,6 +34,7 @@ public class ExpMenu : MonoBehaviour {
     private List<Configuration> chosenConfigs = new List<Configuration>();
     private List<Button> chosenConfigInfoButtons = new List<Button>();
 
+    
     /// <summary>
     /// adds a configuration to the list of available configurations
     /// </summary>
@@ -194,6 +196,11 @@ public class ExpMenu : MonoBehaviour {
         {
             ok = false;
         }
+        float h = 0.5f;
+        if (!float.TryParse(tableHeigthInputField.text, out h) && h <= 2 && h >= 0.5f)//correct default table height
+        {
+            ok = false;
+        }
         if (!ok)
         {
             errorText.SetActive(true);
@@ -207,6 +214,7 @@ public class ExpMenu : MonoBehaviour {
         Experiment e = new Experiment();
         e.name = expName.text;
         e.puzzleType = currentPuzzleType.TypeName;
+        e.defaultTableHeigth = h;
         for (int i = 0; i < chosenConfigs.Count; i++)
         {
             e.configs.Add(chosenConfigs[i]);
@@ -227,7 +235,7 @@ public class ExpMenu : MonoBehaviour {
             //add a header to the file
             using (StreamWriter sw = new StreamWriter(Application.dataPath + e.resultsFile, true))
             {
-                sw.WriteLine("id,config name,puzzle name,width,heigth,time spent,score");
+                sw.WriteLine("id,roomX,roomZ,table heigth,config name,puzzle name,width,heigth,time spent,score");
                 sw.Close();
             }
             //create file with experiment info

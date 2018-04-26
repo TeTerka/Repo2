@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 
 /// <summary>
@@ -27,6 +28,9 @@ public class PipeTile : MonoBehaviour,IInteractibleObject
     /// <summary>describes position of this pipe</summary>
     public int J { get;private set; }
 
+    private List<Renderer> myRndr = new List<Renderer>();
+    public bool blue = false;
+
     /// <summary>
     /// initialize this pipe, set its position to [i,j] 
     /// </summary>
@@ -36,6 +40,11 @@ public class PipeTile : MonoBehaviour,IInteractibleObject
     {
         I = i;
         J = j;
+    }
+
+    private void Start()
+    {
+        myRndr.AddRange(gameObject.GetComponentsInChildren<Renderer>());
     }
 
     public void OnTriggerPressed(ControllerScript controller)
@@ -62,6 +71,25 @@ public class PipeTile : MonoBehaviour,IInteractibleObject
             particleUp = particleLeft;
             particleLeft = particleDown;
             particleDown = tmpp;
+        }
+    }
+
+    public void OnHoverStart()
+    {
+        foreach (Renderer r in myRndr)
+            r.material.color = new Color(0.7f,1,0.6f);
+    }
+    public void OnHoverEnd()
+    {
+        if (blue)//aka if it is part of the highlited path
+        {
+            foreach (Renderer r in myRndr)
+                r.material.color = new Color(0.2f, 1, 1);
+        }
+        else
+        {
+            foreach (Renderer r in myRndr)
+                r.material.color = Color.white;
         }
     }
 

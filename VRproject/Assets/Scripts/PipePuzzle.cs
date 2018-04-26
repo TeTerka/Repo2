@@ -44,6 +44,7 @@ public class PipePuzzle : AbstractPuzzle
     private List<string> widths = new List<string>();
     private List<string> heigths = new List<string>();
 
+
     private void Start()
     {
         pipeSize = 0.2f;
@@ -357,7 +358,7 @@ public class PipePuzzle : AbstractPuzzle
     public override void StartConfig(Configuration c)
     {
         //instantiate the button
-        button = Instantiate(buttonPrefab, buttonSpot);
+        button = Instantiate(buttonPrefab, buttonSpot.position,buttonPrefab.transform.rotation);
     }
 
     public override void StartPhase()
@@ -376,10 +377,8 @@ public class PipePuzzle : AbstractPuzzle
     public override void StartStart()
     {
         //create the start tube
-        GameObject cc = Instantiate(startTubePrefab);
-        cc.transform.SetParent(startSpot);
+        GameObject cc = Instantiate(startTubePrefab,startSpot.position,startTubePrefab.transform.rotation);
         cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
-        cc.transform.localPosition = new Vector3(0, 0, 0 );
         helpPipes.Add(cc);
 
         //set up the wall picture
@@ -388,7 +387,16 @@ public class PipePuzzle : AbstractPuzzle
         NewManager.instance.MultiplyWallpictureScale(x, y);
         NewManager.instance.SetWallPicture(startPicture);
     }
-    
+
+    public override void OnTableHeigthChange()
+    {
+        //this will be called only during start phase, so it adjusts only the position of the start pipe and the button
+        if (helpPipes.Count > 0)
+            helpPipes[0].transform.position = startSpot.position;
+        if (button != null)
+            button.transform.position = buttonSpot.position;
+    }
+
     public override void StartTut()
     {
         //create tutorial puzzle
@@ -431,6 +439,7 @@ public class PipePuzzle : AbstractPuzzle
     private bool CheckComplete(int h, int w)
     {
         //setup
+        List<PipeTile> bluePipes = new List<PipeTile>();
         List<List<bool>> seen = new List<List<bool>>();
         for (int i = 0; i < pipeList.Count; i++)
         {
@@ -456,6 +465,7 @@ public class PipePuzzle : AbstractPuzzle
         //flooding algorithm
         Queue<PipeTile> qu = new Queue<PipeTile>();
         qu.Enqueue(pipeList[h - 1][w - 1]);
+        bluePipes.Add(pipeList[h - 1][w - 1]);
         seen[h - 1][w - 1] = true;
         while (qu.Count != 0)
         {
@@ -470,6 +480,7 @@ public class PipePuzzle : AbstractPuzzle
                         {
                             seen[p.I + 1][p.J] = true;//visit it
                             qu.Enqueue(pipeList[p.I + 1][p.J]);//and remember to check its neighbours too
+                            bluePipes.Add(pipeList[p.I + 1][p.J]);
                         }
                     }
                     else
@@ -498,6 +509,7 @@ public class PipePuzzle : AbstractPuzzle
                         {
                             seen[p.I][p.J + 1] = true;
                             qu.Enqueue(pipeList[p.I][p.J + 1]);
+                            bluePipes.Add(pipeList[p.I][p.J + 1]);
                         }
                     }
                     else
@@ -526,6 +538,7 @@ public class PipePuzzle : AbstractPuzzle
                         {
                             seen[p.I - 1][p.J] = true;
                             qu.Enqueue(pipeList[p.I - 1][p.J]);
+                            bluePipes.Add(pipeList[p.I - 1][p.J]);
                         }
                     }
                     else
@@ -554,6 +567,7 @@ public class PipePuzzle : AbstractPuzzle
                         {
                             seen[p.I][p.J - 1] = true;
                             qu.Enqueue(pipeList[p.I][p.J - 1]);
+                            bluePipes.Add(pipeList[p.I][p.J - 1]);
                         }
                     }
                     else
@@ -574,6 +588,19 @@ public class PipePuzzle : AbstractPuzzle
             }
         }
 
+        //if the solution is correct, this colors the path (from start tube to end tube) blue
+        if(ret==true)
+        {
+            foreach(PipeTile p in bluePipes)
+            {
+                foreach (var m in p.gameObject.GetComponentsInChildren<MeshRenderer>())
+                {
+                    m.material.color = new Color(0.2f,1,1);
+                    p.blue = true;
+                }
+            }
+        }
+
         return ret;
     }
 
@@ -586,7 +613,7 @@ public class PipePuzzle : AbstractPuzzle
     {
         float o = 0.05f;//offset
 
-        //place the pipersHolder on the table
+        //place the pipesHolder on the table
         Vector3 ctp = center.transform.position;
         pipesHolder.transform.position = new Vector3(ctp.x - ((w * (pipeSize - o)) / 2) + ((pipeSize - o) / 2), ctp.y+o, ctp.z - ((h * (pipeSize - o)) / 2) + ((pipeSize - o) / 2));
         
@@ -594,14 +621,7 @@ public class PipePuzzle : AbstractPuzzle
         GameObject cc = Instantiate(endTubePrefab);
         cc.transform.SetParent(pipesHolder.transform);
         cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
-        cc.transform.localPosition = new Vector3(2 * (pipeSize - o), -0.022f, 0 * (pipeSize - o));
-        helpPipes.Add(cc);
-
-        //create fancy end tube (not neccessary but has a nice valve)
-        cc = Instantiate(waterTapPrefab);
-        cc.transform.SetParent(pipesHolder.transform);
-        cc.transform.localScale = new Vector3(pipeSize, pipeSize, pipeSize);
-        cc.transform.localPosition = new Vector3(1 * (pipeSize - o), 0, 0 * (pipeSize - o));
+        cc.transform.localPosition = new Vector3(1 * (pipeSize - o), -0.022f, 0 * (pipeSize - o));
         helpPipes.Add(cc);
 
         //create other tubes
@@ -758,4 +778,5 @@ public class PipePuzzle : AbstractPuzzle
     {
         button.GetComponentInChildren<ButtonScript>().ClickEffect();
     }
+
 }
