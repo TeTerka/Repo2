@@ -60,13 +60,22 @@ public class SpeechBehaviour : StateMachineBehaviour {
         if (sentences.Count > 0)
         {
             npcName = mngr.NpcName;
+            string newText = "Missing translation.";
             if (sentences[0].replaceAlex)
             {
-                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[0].text].Replace("Alex", npcName);
+                if (LocalizationManager.instance.currentLanguage.ContainsKey(sentences[0].text))
+                {
+                    newText = LocalizationManager.instance.currentLanguage[sentences[0].text].Replace("Alex", npcName);
+                }
+                subtitleText.text = newText;
             }
             else
             {
-                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[0].text];
+                if (LocalizationManager.instance.currentLanguage.ContainsKey(sentences[0].text))
+                {
+                    newText = LocalizationManager.instance.currentLanguage[sentences[0].text];
+                }
+                subtitleText.text = newText;
             }
             //manage sound
             if (useSound)
@@ -97,13 +106,22 @@ public class SpeechBehaviour : StateMachineBehaviour {
         time += Time.deltaTime;
         if(i<sentences.Count && time>=timeForASentence)
         {
+            string newText = "Missing translation.";
             if (sentences[i].replaceAlex)
             {
-                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[i].text].Replace("Alex", npcName);
+                if (LocalizationManager.instance.currentLanguage.ContainsKey(sentences[i].text))
+                {
+                    newText = LocalizationManager.instance.currentLanguage[sentences[i].text].Replace("Alex", npcName);
+                }
+                subtitleText.text = newText;
             }
             else
             {
-                subtitleText.text = LocalizationManager.instance.currentLanguage[sentences[i].text]; 
+                if (LocalizationManager.instance.currentLanguage.ContainsKey(sentences[i].text))
+                {
+                    newText = LocalizationManager.instance.currentLanguage[sentences[i].text];
+                }
+                subtitleText.text = newText;
             }
             //manage sound
             if (useSound)

@@ -407,7 +407,11 @@ public class CubePuzzle : AbstractPuzzle
 
     public override void OnTimerStop()
     {
-        //nothing
+        Animator agent = NewManager.instance.TheNpc.GetComponent<Animator>();
+        if (NewManager.instance.HasParameter("CubeTimeRanOut",agent))
+        {
+            agent.SetTrigger("CubeTimeRanOut");
+        }
     }
 
     public override void EndPhase()

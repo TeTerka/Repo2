@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 public class LocalizedText : MonoBehaviour {
 
-    [SerializeField] private string key;//key for this line of text to the current language dictionary
+    [SerializeField] private string key;//key for this line of text, will be searched in the current language dictionary
 
     private void Start()
     {
@@ -21,12 +21,17 @@ public class LocalizedText : MonoBehaviour {
     /// </summary>
     public void ResetContent()
     {
-        GetComponent<Text>().text = LocalizationManager.instance.currentLanguage[key];
+        string newtext = "Missing transtation.";
+        if (LocalizationManager.instance.currentLanguage.ContainsKey(key))
+        {
+            newtext = LocalizationManager.instance.currentLanguage[key];
+        }
+        GetComponent<Text>().text = newtext;
     }
 
     private void OnDestroy()
     {
-        LocalizationManager.instance.currentLocalizedTexts.Remove(this);//remove this to the list of currently visible texts
+        LocalizationManager.instance.currentLocalizedTexts.Remove(this);//remove this from the list of currently visible texts
     }
 
 

@@ -704,6 +704,7 @@ public class PipePuzzle : AbstractPuzzle
     public void Check()
     {
         NewManager nm = NewManager.instance;
+        Animator agent = nm.TheNpc.GetComponent<Animator>();
         if (nm.InStart)//in start phase just play water animation
         {
             nm.SetPhaseComplete();
@@ -713,7 +714,17 @@ public class PipePuzzle : AbstractPuzzle
         {
             PipePuzzle pppp = (PipePuzzle)nm.CurrentPuzzle;
             if (pppp.CheckComplete(2, 2))
+            {
                 nm.IncreaseScore();
+                if(nm.HasParameter("PipeSolvedCorrect",agent))
+                    agent.SetTrigger("PipeSolvedCorrect");
+            }
+            else
+            {
+                if (nm.HasParameter("PipeSolvedWrong", agent))
+                    agent.SetTrigger("PipeSolvedWrong");
+            }
+
             nm.SetPhaseComplete();
         }
         else//in regular phase check heigth x width grid
@@ -721,12 +732,20 @@ public class PipePuzzle : AbstractPuzzle
             PipePuzzle pppp = (PipePuzzle)nm.CurrentPuzzle;
 
             if (pppp.CheckComplete(nm.ActiveConfig.puzzles[nm.ActivePuzzleIndex].heigthpx, nm.ActiveConfig.puzzles[nm.ActivePuzzleIndex].widthpx))
+            {
                 nm.IncreaseScore();
+                if (nm.HasParameter("PipeSolvedWrong", agent))
+                    agent.SetTrigger("PipeSolvedCorrect");
+            }
+            else
+            {
+                if (nm.HasParameter("PipeSolvedCorrect", agent))
+                    agent.SetTrigger("PipeSolvedWrong");
+            }
 
             nm.SetPhaseComplete();
         }
     }
-
 
 
 

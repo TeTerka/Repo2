@@ -370,10 +370,11 @@ public class NewManager : MonoBehaviour {
         //prepare the virtual agent
         if(c.withNPC)
         {
+            Debug.Log("need npc");
             NpcModel nm = null;
             foreach (NpcModel model in npcModels)
             {
-                if(model.modelName==c.modelName)
+                if (model.modelName==c.modelName)
                 {
                     nm = model;
                     break;
@@ -388,7 +389,7 @@ public class NewManager : MonoBehaviour {
                     break;
                 }
             }
-            if(nb!=null && nm!=null)
+            if (nb!=null && nm!=null)
             {
                 CreateCharacter(nm, nb);
             }
@@ -426,6 +427,8 @@ public class NewManager : MonoBehaviour {
         DestroyCharacter();
         ActiveConfig = null;
         idInuput.text = "";
+        subtitlesCanvas.SetActive(false);
+        whoWantsSubtitles = -1;
     }
 
 
@@ -1012,6 +1015,22 @@ public class NewManager : MonoBehaviour {
         Destroy(TheNpc);
         TheNpc = null;
         NpcName = "";
+    }
+
+    /// <summary>
+    /// helper function that chcecks if <paramref name="animator"/> has a parameter called <paramref name="paramName"/>
+    /// </summary>
+    /// <param name="paramName"></param>
+    /// <param name="animator"></param>
+    /// <returns></returns>
+    public bool HasParameter(string paramName, Animator animator)
+    {
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.name == paramName)
+                return true;
+        }
+        return false;
     }
 
 }

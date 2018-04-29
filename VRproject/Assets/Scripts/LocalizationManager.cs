@@ -1,9 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// manager class for handling multiple languages for texts in minigames
+/// </summary>
 public class LocalizationManager : MonoBehaviour {
 
     /// <summary>currently used language</summary>
@@ -17,7 +19,7 @@ public class LocalizationManager : MonoBehaviour {
     [SerializeField] private Dropdown expMenuDropdown;
     [SerializeField] private Dropdown spectatorMenuDropdown;
 
-    /// <summary>reference to english file, which is the default(allwas present)</summary>
+    /// <summary>reference to english file, which is the default (allwas present)</summary>
     [SerializeField] private TextAsset english;
 
     private void Awake()
@@ -32,7 +34,7 @@ public class LocalizationManager : MonoBehaviour {
         string[] lines = english.text.Split('\n');
         foreach(string line in lines)
         {
-            if (line != "")
+            if (line.Contains("="))
             {
                 int eq = line.IndexOf('=');
                 string key = line.Substring(0, eq);
@@ -42,40 +44,51 @@ public class LocalizationManager : MonoBehaviour {
             }
         }
 
-        foreach (string file in Directory.GetFiles(Application.streamingAssetsPath))//find other language files in StreamingAssets folder
+        try
         {
-            if (file.EndsWith(".txt"))
+            //find other language files in StreamingAssets\Languages folder
+            foreach (string file in Directory.GetFiles(Path.Combine(Application.streamingAssetsPath,"Languages")))
             {
-                //create a dictionary for the language
-                string name = file.Substring(file.LastIndexOf('\\')+1, 2);
-                LoadLanguageFile(name);
-                expMenuDropdown.options.Add(new Dropdown.OptionData(name));
-                spectatorMenuDropdown.options.Add(new Dropdown.OptionData(name));
+                if (file.EndsWith(".txt"))
+                {
+                    //create a dictionary for the language
+                    string name = file.Substring(file.LastIndexOf('\\') + 1, file.LastIndexOf('.')-(file.LastIndexOf('\\') + 1));
+                    LoadLanguageFile(name);
+                    expMenuDropdown.options.Add(new Dropdown.OptionData(name));
+                    spectatorMenuDropdown.options.Add(new Dropdown.OptionData(name));
+                }
             }
-        }
+       }
+       catch(System.Exception e)
+       {
+           ErrorCatcher.instance.Show(e.Message);
+       }
 
-        //english ise allways present, so set is as starting language
+        //english is allways present, so set is as starting language
         currentLanguage = allLanguages["en"];
     }
 
     /// <summary>
     /// loads a new language pack from file
     /// </summary>
-    /// <param name="name">language short name</param>
+    /// <param name="name">language name</param>
     private void LoadLanguageFile(string name)
     {
         allLanguages.Add(name, new Dictionary<string, string>());
-        if (File.Exists(Path.Combine(Application.streamingAssetsPath,name+".txt")))
+        if (File.Exists(Path.Combine(Path.Combine(Application.streamingAssetsPath,"Languages"),name+".txt")))
         {
             string line;
-            StreamReader file = new StreamReader(Path.Combine(Application.streamingAssetsPath, name+".txt"));
+            StreamReader file = new StreamReader(Path.Combine(Path.Combine(Application.streamingAssetsPath,"Languages"), name+".txt"));
             while ((line = file.ReadLine()) != null)
             {
-                int eq = line.IndexOf('=');
-                string key = line.Substring(0, eq);              
-                string value = line.Substring(eq+1);
-                if(!allLanguages.ContainsKey(key))
-                    allLanguages[name].Add(key, value);
+                if (line.Contains("="))
+                {
+                    int eq = line.IndexOf('=');
+                    string key = line.Substring(0, eq);
+                    string value = line.Substring(eq + 1);
+                    if (!allLanguages.ContainsKey(key))
+                        allLanguages[name].Add(key, value);
+                }
             }
             file.Close();
         }                
@@ -87,10 +100,13 @@ public class LocalizationManager : MonoBehaviour {
     /// <param name="d"></param>
     public void ChangeLanguage(Dropdown d)
     {
-        currentLanguage = allLanguages[d.options[d.value].text];
-        foreach (LocalizedText item in currentLocalizedTexts)
+        if (allLanguages.ContainsKey(d.options[d.value].text))
         {
-            item.ResetContent();
+            currentLanguage = allLanguages[d.options[d.value].text];
+            foreach (LocalizedText item in currentLocalizedTexts)
+            {
+                item.ResetContent();
+            }
         }
     }
 
